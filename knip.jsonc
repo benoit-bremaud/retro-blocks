@@ -1,0 +1,6 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema-jsonc.json",
+  // Entry points come from the Vite (index.html → src/app/main.ts) and Vitest plugins.
+  "project": ["src/**/*.ts", "tests/**/*.ts"],
+  "ignoreExportsUsedInFile": { "interface": true, "type": true },
+}

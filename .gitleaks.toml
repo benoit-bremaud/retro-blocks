@@ -1,0 +1,7 @@
+# Gitleaks configuration — retro-blocks. Extends the default rule set (gitleaks >= 8.25).
+# For a single reviewed false positive, add its fingerprint to .gitleaksignore instead of
+# widening this allowlist.
+title = "retro-blocks gitleaks config"
+
+[extend]
+useDefault = true

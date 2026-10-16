@@ -1,0 +1,15 @@
+pnpm-lock.yaml
+dist/
+coverage/
+.scannerwork/
+*.svg
+*.puml
+# Prettier would pad every Markdown table of the GDD, the ADRs and the log: noise for no reader.
+*.md
+# Machine-local tool settings (Claude Code)
+.claude/
+
+# Playwright smoke test output
+test-results/
+playwright-report/
+blob-report/
