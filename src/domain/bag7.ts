@@ -3,7 +3,7 @@ import type { Prng } from './ports/prng';
 
 /** 7-bag randomizer: every kind once per bag, shuffled by the injected seeded `Prng` (GDD §3). */
 export class Bag7 {
-  private queue: PieceKind[] = [];
+  private readonly queue: PieceKind[] = [];
 
   private readonly rng: Prng;
 
