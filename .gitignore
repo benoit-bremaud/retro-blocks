@@ -1,0 +1,41 @@
+# Node
+node_modules/
+dist/
+coverage/
+.scannerwork/
+.vite/
+*.tsbuildinfo
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment variables — only the placeholder template is committed
+.env
+.env.*
+!.env.example
+
+# Operating systems
+.DS_Store
+Thumbs.db
+
+# Editors
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs
+logs/
+*.log
+
+# Local scratch
+tmp/
+
+# Claude Code personal settings (machine-local)
+.claude/settings.local.json
+.claude/launch.json
+
+
+# Local MCP server configuration of a developer machine, never shared
+.mcp.json
