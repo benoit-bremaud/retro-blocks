@@ -94,15 +94,16 @@ export function shape(kind: PieceKind, rotation: Rotation): Cells {
   return SHAPES[kind][rotation];
 }
 
-type Tests = readonly Offset[];
+/** The wall-kick offsets to try, in order. */
+export type KickTests = readonly Offset[];
 
-function tests(...pairs: readonly (readonly [number, number])[]): Tests {
+function tests(...pairs: readonly (readonly [number, number])[]): KickTests {
   return pairs.map(([x, y]) => ({ x, y }));
 }
 
 // SRS wall-kick tests (Guideline), `y` upward. Indexed by the starting rotation, then
 // [clockwise, counter-clockwise].
-const JLSTZ_KICKS: Quad<readonly [Tests, Tests]> = [
+const JLSTZ_KICKS: Quad<readonly [KickTests, KickTests]> = [
   [
     tests([0, 0], [-1, 0], [-1, 1], [0, -2], [-1, -2]),
     tests([0, 0], [1, 0], [1, 1], [0, -2], [1, -2]),
@@ -118,7 +119,7 @@ const JLSTZ_KICKS: Quad<readonly [Tests, Tests]> = [
   ],
 ];
 
-const I_KICKS: Quad<readonly [Tests, Tests]> = [
+const I_KICKS: Quad<readonly [KickTests, KickTests]> = [
   [
     tests([0, 0], [-2, 0], [1, 0], [-2, -1], [1, 2]),
     tests([0, 0], [-1, 0], [2, 0], [-1, 2], [2, -1]),
@@ -144,7 +145,7 @@ const NO_KICK = tests([0, 0]);
  * O never kicks. The returned array is shared: never mutate it.
  * @throws RangeError when `to` is not a quarter turn away from `from`.
  */
-export function kicks(kind: PieceKind, from: Rotation, to: Rotation): Tests {
+export function kicks(kind: PieceKind, from: Rotation, to: Rotation): KickTests {
   const turn = (to - from + 4) % 4;
   if (turn !== 1 && turn !== 3) {
     throw new RangeError(`Not a quarter turn: ${String(from)} -> ${String(to)}`);

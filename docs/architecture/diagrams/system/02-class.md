@@ -75,8 +75,6 @@ classDiagram
   }
   class Board {
     -cells: Uint8Array
-    +width = 10
-    +height = 40
     +fits(piece: ActivePiece) bool
     +dropDistance(piece: ActivePiece) int
     +lock(piece: ActivePiece) int[]
@@ -86,13 +84,14 @@ classDiagram
   }
   class ActivePiece {
     +kind: PieceKind
-    +rotation: 0..3
+    +rotation: Rotation
     +x: int
     +y: int
   }
   class Srs {
     <<data>>
-    +shape(kind, rotation) Cell[]
+    +shape(kind, rotation) Cells
+    +spawnPiece(kind) ActivePiece
     +kicks(kind, from, to) Offset[]
   }
   class Bag7 {
@@ -157,12 +156,14 @@ classDiagram
 - **Step order:** hold → rotate → shift → hard / soft drop → gravity → lock. During `Clearing` the
   step only counts `clearFrames` down (20 steps), then spawns the next piece and checks top-out.
   Pause is handled by `SceneMachine`, which simply stops calling `step()`.
-- **Board bounds:** `fits()` is false when x is outside 0..9 or y < 0. `isOccupied()` returns true
+- **Board bounds:** `fits()` is false when a cell is outside the 10 × 40 board. `isOccupied()` returns true
   outside the board (used by the T-spin corner rule).
 - **Line clear:** `lock()` writes the piece and returns the completed rows (ascending) without removing
   them, so the renderer can flash them during `Clearing`; `clearRows()` removes them and drops the
   rows above once the 20 steps have elapsed.
-- **Spawn:** `spawnPiece(kind)` puts the box at x = 3, y = 19: the piece fills rows 20–21, centred.
+- **Reuse:** `lock()`, `Bag7.preview()` and `Srs` return shared arrays (no allocation in the loop):
+  read them before the next call, never mutate them. `Board` size lives in `board-size.ts`.
+- **Spawn:** `spawnPiece(kind)` puts the box at x = 3, y = 19: every piece lies within rows 20–21 (I only on row 21), centred.
 - **Top-out:** block out = the spawned piece does not fit; lock out = `isLockOut()` (every cell at
   y ≥ 20).
 - **Gravity:** integer fixed point, 256 sub-cells per cell. Soft drop multiplies the level value by

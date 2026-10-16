@@ -1,4 +1,4 @@
-/** The seven tetromino kinds, in the order a fresh bag is laid out before shuffling (GDD §3). */
+/** The seven tetromino kinds, in bag layout order (GDD §3). Index + 1 is also the locked-cell code in `Board`: do not reorder. */
 export const PIECE_KINDS = ['I', 'O', 'T', 'S', 'Z', 'J', 'L'] as const;
 
 /** One of the seven piece kinds. */

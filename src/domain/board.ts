@@ -6,6 +6,7 @@ import { shape } from './srs';
 /** The 10 × 40 playfield; `y` runs bottom to top and rows 20+ are the spawn buffer (UML 02-class). */
 export class Board {
   private readonly cells = new Uint8Array(BOARD_WIDTH * BOARD_HEIGHT);
+  private readonly fullRows: number[] = [];
 
   /** True when `(x, y)` holds a locked cell; everything outside the board counts as occupied. */
   isOccupied(x: number, y: number): boolean {
@@ -15,38 +16,40 @@ export class Board {
 
   /** True when every cell of the piece is inside the board and free. */
   fits(piece: ActivePiece): boolean {
-    const [a, b, c, d] = shape(piece.kind, piece.rotation);
-    return (
-      !this.isOccupied(piece.x + a.x, piece.y + a.y) &&
-      !this.isOccupied(piece.x + b.x, piece.y + b.y) &&
-      !this.isOccupied(piece.x + c.x, piece.y + c.y) &&
-      !this.isOccupied(piece.x + d.x, piece.y + d.y)
-    );
+    return this.fitsAt(piece, piece.y);
   }
 
-  /** How many rows the piece can fall before touching the stack or the floor. */
+  /** How many rows the piece can fall before touching the stack or the floor; 0 if it already collides. */
   dropDistance(piece: ActivePiece): number {
     let distance = 0;
-    while (this.fits({ ...piece, y: piece.y - distance - 1 })) distance += 1;
+    while (this.fitsAt(piece, piece.y - distance - 1)) distance += 1;
     return distance;
   }
 
-  /** Writes the piece into the board and returns the completed rows, ascending; they stay in place. */
-  lock(piece: ActivePiece): number[] {
+  /**
+   * Writes the piece into the board and returns the completed rows, ascending; they stay in place
+   * so the renderer can flash them (see `clearRows`). The array is reused: it is valid until the
+   * next `lock`.
+   * @throws RangeError when the piece does not fit.
+   */
+  lock(piece: ActivePiece): readonly number[] {
+    if (!this.fits(piece)) throw new RangeError('Board.lock: the piece does not fit');
     const code = PIECE_KINDS.indexOf(piece.kind) + 1;
-    const [a, b, c, d] = shape(piece.kind, piece.rotation);
-    this.cells[(piece.y + a.y) * BOARD_WIDTH + piece.x + a.x] = code;
-    this.cells[(piece.y + b.y) * BOARD_WIDTH + piece.x + b.x] = code;
-    this.cells[(piece.y + c.y) * BOARD_WIDTH + piece.x + c.x] = code;
-    this.cells[(piece.y + d.y) * BOARD_WIDTH + piece.x + d.x] = code;
-    const full: number[] = [];
-    for (let y = 0; y < BOARD_HEIGHT; y += 1) {
-      if (this.isRowFull(y)) full.push(y);
+    const s = shape(piece.kind, piece.rotation);
+    this.cells[(piece.y + s[0].y) * BOARD_WIDTH + piece.x + s[0].x] = code;
+    this.cells[(piece.y + s[1].y) * BOARD_WIDTH + piece.x + s[1].x] = code;
+    this.cells[(piece.y + s[2].y) * BOARD_WIDTH + piece.x + s[2].x] = code;
+    this.cells[(piece.y + s[3].y) * BOARD_WIDTH + piece.x + s[3].x] = code;
+    // Only the four rows the box covers can have become full.
+    this.fullRows.length = 0;
+    const top = Math.min(piece.y + 4, BOARD_HEIGHT);
+    for (let y = Math.max(piece.y, 0); y < top; y += 1) {
+      if (this.isRowFull(y)) this.fullRows.push(y);
     }
-    return full;
+    return this.fullRows;
   }
 
-  /** Removes the given rows (ascending) and drops the rows above them. */
+  /** Removes the given rows (ascending, unique, as `lock` returns them) in one pass and drops the rows above. */
   clearRows(rows: readonly number[]): void {
     let target = 0;
     let next = 0;
@@ -69,12 +72,23 @@ export class Board {
 
   /** Lock out: every cell of the piece is on a buffer row (y ≥ 20). */
   isLockOut(piece: ActivePiece): boolean {
-    const [a, b, c, d] = shape(piece.kind, piece.rotation);
+    const s = shape(piece.kind, piece.rotation);
     return (
-      piece.y + a.y >= VISIBLE_ROWS &&
-      piece.y + b.y >= VISIBLE_ROWS &&
-      piece.y + c.y >= VISIBLE_ROWS &&
-      piece.y + d.y >= VISIBLE_ROWS
+      piece.y + s[0].y >= VISIBLE_ROWS &&
+      piece.y + s[1].y >= VISIBLE_ROWS &&
+      piece.y + s[2].y >= VISIBLE_ROWS &&
+      piece.y + s[3].y >= VISIBLE_ROWS
+    );
+  }
+
+  // Indexed 0..3 rather than destructured or looped: no iterator, no allocation, no index guards.
+  private fitsAt(piece: ActivePiece, y: number): boolean {
+    const s = shape(piece.kind, piece.rotation);
+    return (
+      !this.isOccupied(piece.x + s[0].x, y + s[0].y) &&
+      !this.isOccupied(piece.x + s[1].x, y + s[1].y) &&
+      !this.isOccupied(piece.x + s[2].x, y + s[2].y) &&
+      !this.isOccupied(piece.x + s[3].x, y + s[3].y)
     );
   }
 

@@ -9,6 +9,10 @@ function draw(seed: number, count: number, max: number): number[] {
 }
 
 describe('SeededPrng', () => {
+  it('matches the retro-shmup xoshiro128** sequence (golden vector, ADR-0002)', () => {
+    expect(draw(42, 8, 1000)).toEqual([660, 126, 111, 814, 79, 26, 15, 258]);
+  });
+
   it('replays the same sequence for the same seed', () => {
     expect(draw(42, 50, 1000)).toEqual(draw(42, 50, 1000));
   });
@@ -25,8 +29,13 @@ describe('SeededPrng', () => {
     expect(values.every(Number.isInteger)).toBe(true);
   });
 
-  it('mixes seed 0 into a usable state', () => {
+  it('mixes seed 0 into a usable state, distinct from seed 1', () => {
     expect(new Set(draw(0, 20, 1000)).size).toBeGreaterThan(1);
+    expect(draw(0, 20, 1000)).not.toEqual(draw(1, 20, 1000));
+  });
+
+  it('returns 0 when max is 1', () => {
+    expect(draw(3, 10, 1)).toEqual(new Array<number>(10).fill(0));
   });
 
   it('reduces seeds to 32 bits', () => {

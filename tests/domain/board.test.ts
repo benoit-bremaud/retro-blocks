@@ -17,6 +17,14 @@ function fillRow(board: Board, y: number): void {
   board.lock(piece('O', 7, y - 1));
 }
 
+function row(board: Board, y: number): number[] {
+  const xs: number[] = [];
+  for (let x = 0; x < BOARD_WIDTH; x += 1) if (board.isOccupied(x, y)) xs.push(x);
+  return xs;
+}
+
+const ALL = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+
 describe('Board', () => {
   it('starts empty and reports cells outside the board as occupied', () => {
     const board = new Board();
@@ -64,12 +72,26 @@ describe('Board', () => {
       expect(board.dropDistance(piece('O', 3, 19))).toBe(18);
     });
 
+    it('stops on an overhang rather than the lowest column', () => {
+      const board = new Board();
+      board.lock(piece('I', 3, -2)); // row 0, columns 3..6
+      // T rotation 0: stem at (x + 1, y + 2), arms at (x..x + 2, y + 1); stem over column 4.
+      expect(board.dropDistance(piece('T', 3, 10))).toBe(10);
+    });
+
     it('is 0 for a grounded piece', () => {
       expect(new Board().dropDistance(piece('O', 3, -1))).toBe(0);
     });
   });
 
   describe('lock', () => {
+    it('refuses a piece that does not fit', () => {
+      const board = new Board();
+      expect(() => board.lock(piece('T', -1, 5))).toThrow(RangeError);
+      board.lock(piece('O', 4, 0));
+      expect(() => board.lock(piece('O', 4, 0))).toThrow(RangeError);
+    });
+
     it('writes the cells and returns no row while rows are incomplete', () => {
       const board = new Board();
       expect(board.lock(piece('O', 3, -1))).toEqual([]);
@@ -91,15 +113,22 @@ describe('Board', () => {
   });
 
   describe('clearRows', () => {
+    it('does nothing for an empty list', () => {
+      const board = new Board();
+      fillRow(board, 0);
+      board.clearRows([]);
+      expect(row(board, 0)).toEqual(ALL);
+    });
+
     it('removes the row and drops everything above', () => {
       const board = new Board();
       fillRow(board, 0);
       board.lock(piece('O', 0, 1)); // marker at (1..2, 2..3)
       board.clearRows([0]);
-      expect(board.isOccupied(0, 0)).toBe(false);
-      expect(board.isOccupied(8, 0)).toBe(true); // was (8, 1)
-      expect(board.isOccupied(1, 1)).toBe(true);
-      expect(board.isOccupied(1, 3)).toBe(false);
+      expect(row(board, 0)).toEqual([8, 9]); // was row 1
+      expect(row(board, 1)).toEqual([1, 2]);
+      expect(row(board, 2)).toEqual([1, 2]);
+      expect(row(board, 3)).toEqual([]);
     });
 
     it('removes several non-adjacent rows at once', () => {
@@ -107,10 +136,33 @@ describe('Board', () => {
       fillRow(board, 0);
       fillRow(board, 2);
       board.clearRows([0, 2]);
-      expect(board.isOccupied(0, 0)).toBe(false);
-      expect(board.isOccupied(8, 0)).toBe(true);
-      expect(board.isOccupied(8, 1)).toBe(true);
-      expect(board.isOccupied(8, 2)).toBe(false);
+      expect(row(board, 0)).toEqual([8, 9]);
+      expect(row(board, 1)).toEqual([8, 9]);
+      expect(row(board, 2)).toEqual([]);
+    });
+
+    it('removes adjacent rows and zeroes the vacated top', () => {
+      const board = new Board();
+      board.lock(piece('I', 0, -2));
+      board.lock(piece('I', 0, -1));
+      board.lock(piece('O', 7, -1));
+      board.lock(piece('O', 3, -1));
+      board.lock(piece('O', 5, -1));
+      board.lock(piece('O', 3, 36)); // marker on rows 37..38
+      board.clearRows([0, 1]);
+      expect(row(board, 0)).toEqual([]);
+      expect(row(board, 35)).toEqual([4, 5]);
+      expect(row(board, 36)).toEqual([4, 5]);
+      expect(row(board, 37)).toEqual([]);
+      expect(row(board, 39)).toEqual([]);
+    });
+
+    it('removes the top row', () => {
+      const board = new Board();
+      board.lock(piece('O', 3, 37)); // rows 38..39
+      board.clearRows([39]);
+      expect(row(board, 38)).toEqual([4, 5]);
+      expect(row(board, 39)).toEqual([]);
     });
   });
 
