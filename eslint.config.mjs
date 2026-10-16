@@ -4,7 +4,7 @@ import { defineConfig } from 'eslint/config';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
-// Browser, clock and global-object access the domain must never use (retro-shmup ADR-0002/0003/0009).
+// Browser, clock and global-object access the domain must never use (ADR-0004, component diagram).
 const BROWSER_GLOBALS = [
   'window',
   'document',
@@ -25,11 +25,11 @@ const DOMAIN_IMPORT_PATTERNS = [
   {
     regex: '^(?!\\.{1,2}/)',
     message:
-      'The domain imports only its own modules: no package, no Node built-in (retro-shmup ADR-0003).',
+      'The domain imports only its own modules: no package, no Node built-in (component diagram, ADR-0004).',
   },
   {
     group: ['**/adapters/**', '**/app/**'],
-    message: 'The domain depends only on its ports (retro-shmup ADR-0003).',
+    message: 'The domain depends only on its ports (component diagram, ADR-0004).',
   },
 ];
 
@@ -58,14 +58,7 @@ const RESTRICTED_SYNTAX = [
 
 export default defineConfig(
   {
-    ignores: [
-      'dist/',
-      'coverage/',
-      'node_modules/',
-      'test-results/',
-      'playwright-report/',
-      'blob-report/',
-    ],
+    ignores: ['dist/', 'coverage/', 'node_modules/'],
   },
   js.configs.recommended,
   tseslint.configs.strictTypeChecked,
@@ -92,7 +85,7 @@ export default defineConfig(
   },
   {
     // No allocation inside the game loop (CLAUDE.md): a `for...of` over an array allocates an
-    // iterator in every V8 tier below TurboFan (measured 2026-10-08), so source code uses index
+    // iterator in every V8 tier below TurboFan (measured in retro-shmup, ADR-0004), so source code uses index
     // loops, which never allocate.
     files: ['src/**/*.ts'],
     rules: {
@@ -142,12 +135,13 @@ export default defineConfig(
     languageOptions: { globals: globals.browser },
     rules: {
       // Only the composition root touches these; adapters receive narrow injected interfaces
-      // (retro-shmup ADR-0014 decision 7, ADR-0015 decision 4).
+      // (component diagram, ADR-0004).
       'no-restricted-globals': [
         'error',
         ...['window', 'document', 'navigator', 'requestAnimationFrame'].map((name) => ({
           name,
-          message: 'Adapters receive browser objects from src/app/main.ts (retro-shmup ADR-0015).',
+          message:
+            'Adapters receive browser objects from src/app/main.ts (component diagram, ADR-0004).',
         })),
       ],
       'no-restricted-imports': [

@@ -1,4 +1,4 @@
-# Light server-side gate (retro-shmup ADR-0007): lint, typecheck and tests, no coverage upload, no Sonar.
+# Light server-side gate (ADR-0004): lint, typecheck and tests, no coverage upload, no Sonar.
 # The heavy gate runs locally in the pre-push hook (`make verify`).
 name: CI
 

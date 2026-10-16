@@ -12,3 +12,8 @@
 - Self-review (5 Must, 5 Should, 2 Nice) then independent architecture-guardian review (5 Must, 6 Should, 4 Nice), all applied:
   clear delay counted in simulation steps (determinism), 10 × 40 board buffer with block/lock out, IntentFrame held/pressed + AutoShift (DAS/ARR), generic FrameLoop driving SceneMachine + RunPresenter, lock-delay reset rules, SimView read model, full scoring table, T-spin rule via lastRotationKick, HoldSlot folded into Simulation, explicit seed and constructor, stale CLAUDE.md rule fixed.
 - Kept on purpose: Prng interface, four ports, LockDelay/Srs/Gravity as separate units.
+
+## 2026-10-16 — Brick 2: toolchain (branch `chore/toolchain`)
+- Toolchain copied from retro-shmup `f698786`: TS 6.0 strict, Vite, Vitest, ESLint (dependency rule, determinism, HTML sinks), knip, Prettier, husky (gitleaks, lint-staged, commitlint, `make verify`), CI light check + Gitleaks, CodeQL, Dependency Review, Scorecard. No Playwright yet (smoke with brick 5).
+- SonarQube project `retro-blocks` auto-provisioned with the global analysis token; gate PASSED.
+- review-local: 0 Must, 6 Should, 7 Nice. Applied: ADR-0004 (inherited toolchain decisions) replacing retro-shmup ADR references, CSP meta, README/SECURITY/CLAUDE.md refreshed, Playwright leftovers removed. Deferred: Scorecard `publish_results` when the repo goes private; adapter→domain/ports import rule at brick 5.

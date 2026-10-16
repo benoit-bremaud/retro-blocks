@@ -1,5 +1,5 @@
 {
-  "//": "Tool configuration files only: Node types never reach the browser code (ADR-0011).",
+  "//": "Tool configuration files only: Node types never reach the browser code (ADR-0004).",
   "compilerOptions": {
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
     "target": "ES2023",

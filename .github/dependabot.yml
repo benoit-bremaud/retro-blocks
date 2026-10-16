@@ -23,10 +23,10 @@ updates:
     cooldown:
       default-days: 7
     ignore:
-      # typescript-eslint supports TypeScript < 6.1 only (retro-shmup ADR-0011): move to 7 when it does.
+      # typescript-eslint supports TypeScript < 6.1 only (ADR-0004): move to 7 when it does.
       - dependency-name: 'typescript'
         update-types: ['version-update:semver-major', 'version-update:semver-minor']
-      # Node types follow the Node 22 runtime (retro-shmup ADR-0011): a Node major moves .nvmrc, engines and
+      # Node types follow the Node 22 runtime (ADR-0004): a Node major moves .nvmrc, engines and
       # @types/node together.
       - dependency-name: '@types/node'
         update-types: ['version-update:semver-major']

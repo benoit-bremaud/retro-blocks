@@ -7,7 +7,7 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       include: ['src/**/*.ts'],
-      // The composition root is covered by the browser smoke test (brick 5), not by unit tests.
+      // The composition root is not unit-tested: it only wires adapters (smoke test planned with brick 5).
       exclude: ['src/**/*.d.ts', 'src/app/main.ts'],
       reporter: ['text', 'lcov'],
       // Owner floor is 80 %; raise these as a ratchet once the domain lands, never lower them.

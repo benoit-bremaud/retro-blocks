@@ -1,4 +1,4 @@
-// Conventional Commits with the project's scopes (CONTRIBUTING.md).
+// Conventional Commits with the project's scopes (CLAUDE.md).
 export default {
   extends: ['@commitlint/config-conventional'],
   rules: {
@@ -22,7 +22,6 @@ export default {
         'audio',
         'input',
         'ui',
-        'levels',
         'assets',
         'i18n',
         'tests',

@@ -2,7 +2,14 @@
 
 Browser falling-block puzzle game (codename). TypeScript strict + native Canvas 2D + Vite.
 
-**Status:** brick 0 — design only (GDD, ADRs, UML). No code until the `retro-shmup` vertical slice is done.
+**Status:** brick 2 — toolchain (brick plan in ADR-0003).
+
+## Develop
+
+Node 22, pnpm 10. `pnpm install`, then `pnpm dev`.
+
+The pre-push hook runs `make verify`, which needs `gitleaks`, `sonar-scanner` and a SonarQube
+server at `http://localhost:9000` (token in `$SONAR_TOKEN` or `~/.config/sonarqube/analysis-token`).
 
 > The genre's best-known title is a registered trademark. This repo uses a codename, original
 > assets and no trademarked name or artwork.

@@ -31,9 +31,9 @@ disclosed through a GitHub security advisory once released.
   schedule. Any finding fails the check; there is no advisory mode for secrets.
 - **Pinned actions** — every GitHub Actions step is pinned to a full commit SHA, never a tag.
 - **Dependency monitoring** — Dependabot alerts and update PRs are enabled for the repository.
-- **No backend, no personal data** — version 1.0 is a static web game with no server, no account
-  and no network call. Player data (options and the local top 10) stays in the browser's
-  `localStorage` and holds nothing personal beyond a hall-of-fame name.
+- **No backend, no personal data** — a static web page with no server, no account and no network
+  call. Settings and the local hall of fame (planned) will stay in the browser's `localStorage`
+  and hold nothing personal beyond a chosen name.
 - **No secrets in the repository** — the project holds no credential; real dotenv files are
   gitignored.
 

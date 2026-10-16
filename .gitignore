@@ -36,10 +36,6 @@ tmp/
 .claude/settings.local.json
 .claude/launch.json
 
-# Playwright smoke test output
-test-results/
-playwright-report/
-blob-report/
 
 # Local MCP server configuration of a developer machine, never shared
 .mcp.json
