@@ -80,6 +80,7 @@ classDiagram
     +fits(piece: ActivePiece) bool
     +dropDistance(piece: ActivePiece) int
     +lock(piece: ActivePiece) int[]
+    +clearRows(rows: int[])
     +isOccupied(x, y) bool
     +isLockOut(piece: ActivePiece) bool
   }
@@ -158,6 +159,10 @@ classDiagram
   Pause is handled by `SceneMachine`, which simply stops calling `step()`.
 - **Board bounds:** `fits()` is false when x is outside 0..9 or y < 0. `isOccupied()` returns true
   outside the board (used by the T-spin corner rule).
+- **Line clear:** `lock()` writes the piece and returns the completed rows (ascending) without removing
+  them, so the renderer can flash them during `Clearing`; `clearRows()` removes them and drops the
+  rows above once the 20 steps have elapsed.
+- **Spawn:** `spawnPiece(kind)` puts the box at x = 3, y = 19: the piece fills rows 20–21, centred.
 - **Top-out:** block out = the spawned piece does not fit; lock out = `isLockOut()` (every cell at
   y ≥ 20).
 - **Gravity:** integer fixed point, 256 sub-cells per cell. Soft drop multiplies the level value by
