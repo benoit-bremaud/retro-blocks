@@ -1,0 +1,16 @@
+html,
+body {
+  margin: 0;
+  background: #0b0b14;
+}
+
+body {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* `margin: auto` centres in both axes, and a window smaller than the screen scrolls instead of clipping it. */
+#screen {
+  margin: auto;
+  image-rendering: pixelated;
+}

@@ -72,6 +72,7 @@ classDiagram
     +lines
     +phase
     +clearFrames
+    +clearingRows
   }
   class Board {
     -cells: Uint8Array
@@ -177,3 +178,5 @@ classDiagram
   rotation and cleared by any move or fall. Requires ≥ 3 of the 4 diagonal corners occupied;
   `Full` if both front corners are occupied or the kick was 4, otherwise `Mini`.
 - **Bag:** `preview(n)` appends a new shuffled bag while the queue holds fewer than n pieces.
+- **Cell code (brick 5):** `BoardView` and `Board` expose `cellAt(x, y)` (0 empty, else `PIECE_KINDS` index + 1) next to `isOccupied`, so the renderer colours a locked cell from the view alone.
+- **Clearing rows (brick 5):** `SimView.clearingRows` is the rows completed by the last lock while `phase` is Clearing (empty otherwise), so the presenter flashes them from the view alone. The array is the reused `Board.lock` array.

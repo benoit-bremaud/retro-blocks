@@ -3,7 +3,7 @@ import { AutoShift } from './auto-shift';
 import { Bag7 } from './bag7';
 import { Board } from './board';
 import { SUB_CELLS_PER_CELL, subCellsPerStep } from './gravity';
-import { Intent, type IntentFrame } from './intent';
+import { Intent, type IntentFrame } from './ports/input-port';
 import { LockDelay } from './lock-delay';
 import type { PieceKind } from './piece-kind';
 import type { Prng } from './ports/prng';
@@ -27,6 +27,8 @@ export interface StepOutcome {
 /** Read-only access to the locked cells, for the renderer. */
 export interface BoardView {
   isOccupied(x: number, y: number): boolean;
+  /** 0 for an empty cell, else the piece kind's index + 1 in `PIECE_KINDS`. */
+  cellAt(x: number, y: number): number;
 }
 
 /**
@@ -46,6 +48,8 @@ export interface SimView {
   readonly lines: number;
   readonly phase: Phase;
   readonly clearFrames: number;
+  /** Rows completed by the last lock while `phase` is Clearing (empty otherwise); the array is reused like `Board.lock`'s. */
+  readonly clearingRows: readonly number[];
 }
 
 type Mutable<T> = { -readonly [K in keyof T]: T[K] };
@@ -121,6 +125,7 @@ export class Simulation {
       lines: 0,
       phase: 'Falling',
       clearFrames: 0,
+      clearingRows: NO_ROWS,
     };
     this.spawnNext();
   }
@@ -153,6 +158,7 @@ export class Simulation {
     v.lines = this.score.lines;
     v.phase = this.phase;
     v.clearFrames = this.clearFrames;
+    v.clearingRows = this.pendingRows;
     return v;
   }
 

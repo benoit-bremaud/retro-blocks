@@ -39,3 +39,7 @@ tmp/
 
 # Local MCP server configuration of a developer machine, never shared
 .mcp.json
+
+# Playwright smoke test output
+test-results/
+playwright-report/

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Board } from '../../src/domain/board';
 import { BOARD_WIDTH } from '../../src/domain/board-size';
-import { Intent, type IntentFrame } from '../../src/domain/intent';
+import { Intent, type IntentFrame } from '../../src/domain/ports/input-port';
 import type { PieceKind } from '../../src/domain/piece-kind';
 import type { Prng } from '../../src/domain/ports/prng';
 import { SeededPrng } from '../../src/domain/random/seeded-prng';
@@ -284,6 +284,7 @@ describe('Simulation: line clears', () => {
     expect(sim.view().lines).toBe(1);
     expect(sim.view().phase).toBe('Clearing');
     expect(sim.view().clearFrames).toBe(20);
+    expect(sim.view().clearingRows).toEqual([0]);
     for (let remaining = 19; remaining >= 1; remaining -= 1) {
       const step = snapshot(sim.step(press(Intent.HardDrop | Intent.Hold)));
       expect(step.clearedRows).toEqual([]);
@@ -295,6 +296,7 @@ describe('Simulation: line clears', () => {
     expect(sim.view().active.kind).toBe('O');
     expect(sim.view().points).toBe(142);
     expect(sim.view().held).toBeNull();
+    expect(sim.view().clearingRows).toEqual([]);
     // The cleared row is gone; the O's second row fell down to row 0.
     expect(sim.view().cells.isOccupied(0, 0)).toBe(false);
     expect(sim.view().cells.isOccupied(8, 0)).toBe(true);

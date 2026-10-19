@@ -2,7 +2,7 @@
 
 Browser falling-block puzzle game (codename). TypeScript strict + native Canvas 2D + Vite.
 
-**Status:** brick 3 — domain I (board, SRS rotation, seeded PRNG, 7-bag); no playable build yet (brick plan in ADR-0003).
+**Status:** brick 5 — first playable build (keyboard, ghost, hold, next queue, line-clear flash, pause, game over); menus, hall of fame and audio come in brick 6 (brick plan in ADR-0003).
 
 ## Develop
 

@@ -36,6 +36,19 @@ describe('Board', () => {
     expect(board.isOccupied(0, BOARD_HEIGHT)).toBe(true);
   });
 
+  it('reports the locked cell code, and 0 for empty or outside cells', () => {
+    const board = new Board();
+    board.lock(piece('T', 0, 0));
+    // T is the third kind: code 3. Rotation 0 holds (1, 2) and (0..2, 1).
+    expect(board.cellAt(1, 2)).toBe(3);
+    expect(board.cellAt(0, 1)).toBe(3);
+    expect(board.cellAt(5, 5)).toBe(0);
+    expect(board.cellAt(-1, 0)).toBe(0);
+    expect(board.cellAt(BOARD_WIDTH, 0)).toBe(0);
+    expect(board.cellAt(0, -1)).toBe(0);
+    expect(board.cellAt(0, BOARD_HEIGHT)).toBe(0);
+  });
+
   describe('fits', () => {
     it('accepts a piece inside the board', () => {
       const board = new Board();

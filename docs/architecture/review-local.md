@@ -1,32 +1,33 @@
-# Local review — retro-blocks (brick 4, branch diff main...HEAD)
+# Local review — retro-blocks (brick 5, branch diff main...HEAD)
 
 - Date: 2026-10-19
-- Commit: see `git log` on `feat/game` (reviewed at fee3259, fixes applied after)
-- Scope: branch diff `main...HEAD` (Domain II: AutoShift, LockDelay, Gravity, Scoring, Simulation)
+- Commit: see `git log` on `feat/engine` (reviewed at 8a7afba, fixes applied after)
+- Scope: branch diff `main...HEAD` (engine and render: FrameLoop, SceneMachine, RunPresenter, adapters, smoke test)
 - Checks run: design · docs · tests · security · correctness
-- Verdict: fix Must first (done) · Must 4 (all fixed) · Should 9 (6 fixed, 3 awaiting owner) · Nice 9
+- Verdict: ship after the selected Should fixes (done) · Must 0 · Should 13 (selected ones fixed, rest to file) · Nice 14
 
-## Pre-merge gate (push gate, no UI so no QA pass)
+## Pre-merge gate (reviewed SHA 8a7afba, re-run after fixes)
 | Step | Result |
 |---|---|
-| 1 Tests | ✅ 176 unit tests, no E2E yet (brick 5) |
-| 2 Coverage | tests 98.9 % stmts / 94.2 % branches / 100 % funcs · docs 100 % (30/30, floor 90) |
-| 3 SonarQube | ✅ PASSED (after fixing S3358 and S7735) |
-| 4 Secrets | ✅ gitleaks clean · diff is pure domain code and docs |
-| 5 QA pass | ⚠️ n/a: no runnable product until brick 5 |
+| 1 Tests | ✅ 232 unit tests · ✅ browser smoke in Chromium, Firefox and WebKit (`make smoke`) |
+| 2 Coverage | tests 98.4 % stmts / 91.1 % branches (floor 80) · docs 93.7 % (59/63, floor 90) |
+| 3 SonarQube | ✅ PASSED (5 minor findings fixed: S7758, S7764 ×3, S7735) |
+| 4 Secrets | ✅ gitleaks clean · no tracked .env · diff read: nothing sensitive |
+| 5 QA pass | ✅ full · console clean · screenshots: `docs/architecture/qa/2026-10-19-brick5/` (line-clear flash not captured: random seed, covered by unit tests) |
 
-## 🔴 Must Have (all fixed)
-- `tests/domain/simulation.test.ts` `[tests]` · spin reset after fall / hard drop untested → added.
-- `tests/domain/simulation.test.ts` `[tests]` · T pointing up (rotation 0) front corners untested → Full and Mini added.
-- `tests/domain/scoring.test.ts` `[tests]` · back-to-back with Mini, zero-line Mini, level > 1 → added.
-- `simulation.test.ts` `[tests]` · spin + line clear end to end: not added, covered by the 400-point spin lock test plus the single and quad clear tests; Scoring unit tests cover the combination.
+## 🔴 Must Have
+_None._
 
 ## 🟡 Should Have
-- Fixed: UML drift (`lockDelay`, `spawn`, `lastRotationKick`, DAS/ARR constants, combo wording, drop methods) · `Scoring` fields read-only + `addSoftDrop`/`addHardDrop` · doc contract of `award`, `ghostY`, step order, `Pause` · weak LockDelay/AutoShift/Gravity tests.
-- Awaiting owner: 15th reset locks immediately (`lock-delay.ts:26`) · input dropped during Clearing (`simulation.ts:133`) · combo reading (`scoring.ts`).
+- Fixed: UML drift in `03-class-engine.md` · `FONT` reused by `CanvasRenderer` · `cellCode` shared · `BOARD_WIDTH` / `DRAWN_ROWS` instead of 10 / 22 · `BIT_COUNT` derived from `Intent` · key pressed with Cmd no longer sticks (`keyboard-input.ts`) · `overflow: hidden` removed so a small window scrolls · stale `current` comment and ADR references · frame-loop assertions made exact · SceneMachine transitions, preview and overlay positions, `clear4` / Mini cases, glyph tables tested · smoke test split in steps and frame-based instead of sleeps.
+- To file as issues (owner OK pending): `pnpm dev` under the CSP may lose its style (to verify first).
 
 ## 🔵 Nice to Have
-- `detectSpin` as a pure function · `lowestY` tracks the box row, not the lowest cell · `startLevel` validation at the settings boundary · expose `pendingRows` in `SimView` · DAS/ARR configurable (GDD §7) · `Bag7.fill` spread push allocates (brick 3 file) · `SimView.next` draws from the Prng lazily (single owner only) · magic numbers `CLEAR_FRAMES` etc. without GDD refs.
+- Frame loop frozen for good after an exception in `step` / `render` · no auto-pause on blur or `visibilitychange` · a key held across a focus change is ignored · fractional DPR and monitor change · `setScale` / `computeViewport` signatures · panel y-offsets as named constants · `Escape` literal in `keyboard-input.ts` · palette comments · `?? Palette.flash` fallback comment.
 
 ## ⚪ Disagree / Intentional
-- `ObstacleBoard` test subclass of the real `Board` (seam, not a mock) · `spin-kind.ts` separate file (avoids a scoring→simulation import) · `Simulation` constructor `board` parameter.
+- `Clock`, `FrameTarget` ports with one implementation: test seams and the dependency direction. `AudioPort` without adapter: validated in the UML, built in brick 6.
+- Smoke test reads canvas pixels, no test hook (ADR-0003).
+
+## Per-dimension summary
+- Design: hard rules pass, no over-engineering · Docs: 93.7 %, stale comments fixed · Tests: healthy pyramid, assertions tightened · Security: no sink, CSP fine in production · Correctness: no bug found beyond the Cmd key and the CSS clip.
