@@ -32,3 +32,13 @@
 - MCDA (owner-validated): gravity table = precomputed Guideline curve (455/500 vs NES frames 380, runtime `Math.pow` 340); `SimView` = reused object with a read-only `BoardView` (445/500 vs copied cells 415, getters 335); after review: 15 resets then the countdown runs out (440/500 vs lock on 16th move 385, status quo 365), input ignored during Clearing (410/500, revisit at the brick 5 tuning), combo literal from the GDD (430/500).
 - review-local: 4 Must (test gaps) fixed, 6 Should fixed (UML drift, read-only score, doc contracts). Sonar S3358 / S7735 fixed. Gate: 176 tests, 94.2 % branches, docs 100 %, Sonar PASSED.
 - Open Nice: `detectSpin` as a pure function, `lowestY` tracks the box row, `startLevel` validation, configurable DAS/ARR, `Bag7.fill` spread allocation.
+
+## 2026-10-19 — PR #7 merged (brick 4)
+- Squash `58631ff` on `main`: AutoShift, LockDelay, Gravity, Scoring, Simulation (`feat(game)`).
+
+## 2026-10-19 — Brick 5: engine and render, first playable (branch `feat/engine`)
+- Playable in the browser: fixed 60 Hz `FrameLoop` (copied from retro-shmup `f698786`, time scale dropped), `SceneMachine` (Run / Paused / GameOver, retry with a fresh seed), `RunPresenter` (ghost, hold, next × 5, clear flash from `SimView.clearingRows`, overlays), `CanvasRenderer` at integer scale with the bitmap font copied from retro-shmup, `KeyboardInput` (fixed map), `AudioPort` + `SILENT_AUDIO`. No `StoragePort` yet (brick 6).
+- Owner-validated MCDA: render port of primitives with the layout in a domain presenter (455/500 vs high-level port 335, adapter reading `SimView` 285); smoke test in 3 engines by `make smoke`, outside `verify` (430/500 vs 3 engines in verify 330, Chromium only 275); `SimView.clearingRows` (455/500 vs presenter latching the outcome 280).
+- Lint rule added: an adapter imports only `domain/ports/**`; `Intent` / `IntentFrame` moved to `ports/input-port.ts` (+ `Confirm`), `BoardView.cellAt` added (shared cell code for render).
+- Playwright smoke (Chromium, Firefox, WebKit): boot, hard drop, pause, top-out, restart, no console error; canvas pixels only, no test hook. QA screenshots in `docs/architecture/qa/2026-10-19-brick5/`.
+- Gotcha: the ghost is a translucent grey over the field, so pixel probes tell a locked cell from the ghost by colour saturation.
