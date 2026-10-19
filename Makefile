@@ -2,7 +2,7 @@
 SONAR_URL := http://localhost:9000
 SONAR_TOKEN_FILE := $(HOME)/.config/sonarqube/analysis-token
 
-.PHONY: verify check doc-coverage secrets audit sonar-scan
+.PHONY: verify check doc-coverage secrets audit sonar-scan smoke
 
 verify: check secrets audit sonar-scan
 
@@ -35,3 +35,8 @@ sonar-scan:
 	@curl -sf -m 5 "$(SONAR_URL)/api/system/status" | grep -q '"status":"UP"' || { echo "SonarQube is not UP at $(SONAR_URL)."; exit 1; }
 	@TOKEN="$${SONAR_TOKEN:-$$(cat "$(SONAR_TOKEN_FILE)" 2>/dev/null)}"; test -n "$$TOKEN" || { echo "No SONAR_TOKEN and no $(SONAR_TOKEN_FILE)."; exit 1; }; \
 	SONAR_TOKEN="$$TOKEN" sonar-scanner -Dsonar.host.url="$(SONAR_URL)" -Dsonar.projectVersion="$$(node -p "require('./package.json').version")"
+
+# The browser smoke test in Chromium, Firefox and WebKit, run by hand, not part of verify (as retro-shmup
+# ADR-0007). Engines: pnpm exec playwright install chromium firefox webkit
+smoke:
+	pnpm test:smoke

@@ -1,0 +1,25 @@
+/** Colours of the game, as CSS colour strings; cell colours are indexed by the cell code (`PIECE_KINDS` index + 1, 0 unused). */
+export const Palette = {
+  background: '#0b0b14',
+  margin: '#14142a',
+  field: '#06060d',
+  grid: '#10101c',
+  panel: '#181830',
+  text: '#e8e8f4',
+  textDim: '#8888a8',
+  ghost: 'rgba(255, 255, 255, 0.22)',
+  flash: '#ffffff',
+  shade: 'rgba(0, 0, 0, 0.35)',
+  overlay: 'rgba(6, 6, 13, 0.72)',
+  cell: ['#000000', '#00c8d8', '#f0d000', '#a030d8', '#28c040', '#e02828', '#2848e0', '#f08020'],
+  cellLight: [
+    '#000000',
+    '#80f0ff',
+    '#fff480',
+    '#d890ff',
+    '#90ff9c',
+    '#ff9090',
+    '#90a4ff',
+    '#ffc080',
+  ],
+} as const;

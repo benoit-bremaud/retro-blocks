@@ -14,6 +14,12 @@ export class Board {
     return this.cells[y * BOARD_WIDTH + x] !== 0;
   }
 
+  /** The locked cell's code: 0 for empty or outside the board, else the piece kind's index + 1 (`PIECE_KINDS`). */
+  cellAt(x: number, y: number): number {
+    if (x < 0 || x >= BOARD_WIDTH || y < 0 || y >= BOARD_HEIGHT) return 0;
+    return this.cells[y * BOARD_WIDTH + x] ?? 0;
+  }
+
   /** True when every cell of the piece is inside the board and free. */
   fits(piece: ActivePiece): boolean {
     return this.fitsAt(piece, piece.y);

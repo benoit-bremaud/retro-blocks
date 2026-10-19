@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { AutoShift } from '../../src/domain/auto-shift';
-import { Intent } from '../../src/domain/intent';
+import { Intent } from '../../src/domain/ports/input-port';
 
 const L = Intent.Left;
 const R = Intent.Right;

@@ -1,11 +1,55 @@
-import { BOARD_WIDTH, VISIBLE_ROWS } from '../domain/board-size';
+import { CanvasRenderer } from '../adapters/canvas-renderer';
+import { KeyboardInput } from '../adapters/keyboard-input';
+import { PerformanceClock } from '../adapters/performance-clock';
+import { SILENT_AUDIO } from '../domain/ports/audio-port';
+import { SCREEN_HEIGHT, SCREEN_WIDTH } from '../domain/presentation/layout';
+import { SceneMachine } from '../domain/scenes/scene-machine';
+import { FrameLoop } from './frame-loop';
+import { computeViewport } from './viewport';
+import './style.css';
 
-// Placeholder composition root (toolchain brick): proves the build pipeline end to end.
-// Replaced by the real wiring in brick 5 (engine and render).
-const canvas = document.querySelector<HTMLCanvasElement>('#screen');
-const context = canvas?.getContext('2d');
-if (canvas && context) {
-  const cell = canvas.width / BOARD_WIDTH;
-  context.fillStyle = '#111';
-  context.fillRect(0, 0, canvas.width, cell * VISIBLE_ROWS);
+// Composition root (ADR-0004): the only place that touches window and document.
+const found = document.querySelector<HTMLCanvasElement>('#screen');
+const context = found?.getContext('2d');
+if (!found || !context) throw new Error('retro-blocks needs a 2D canvas');
+const canvas = found;
+
+const renderer = new CanvasRenderer(context);
+
+/** Fits the canvas to the window at an integer scale; resizing a canvas clears it, the next frame redraws. */
+function fitCanvas(): void {
+  const ratio = globalThis.devicePixelRatio;
+  const viewport = computeViewport(
+    SCREEN_WIDTH,
+    SCREEN_HEIGHT,
+    globalThis.innerWidth,
+    globalThis.innerHeight,
+    ratio,
+  );
+  canvas.width = viewport.deviceWidth;
+  canvas.height = viewport.deviceHeight;
+  canvas.style.width = `${String(viewport.cssWidth)}px`;
+  canvas.style.height = `${String(viewport.cssHeight)}px`;
+  renderer.setScale(SCREEN_WIDTH, SCREEN_HEIGHT, viewport.scale);
 }
+fitCanvas();
+globalThis.addEventListener('resize', fitCanvas);
+
+const input = new KeyboardInput();
+globalThis.addEventListener('keydown', (event) => {
+  if (input.keyDown(event.code, event.repeat)) event.preventDefault();
+});
+globalThis.addEventListener('keyup', (event) => {
+  input.keyUp(event.code);
+});
+globalThis.addEventListener('blur', () => {
+  input.releaseAll();
+});
+
+// Gameplay seed (UML system/01-component): one fresh seed per run, recorded with the score in brick 6.
+const newSeed = (): number => crypto.getRandomValues(new Uint32Array(1))[0] ?? 0;
+
+const scenes = new SceneMachine(newSeed, renderer, SILENT_AUDIO);
+new FrameLoop(new PerformanceClock(), input, scenes, (callback) => {
+  globalThis.requestAnimationFrame(callback);
+}).start();

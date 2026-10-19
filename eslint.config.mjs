@@ -149,6 +149,11 @@ export default defineConfig(
         {
           patterns: [
             { group: ['**/app/**'], message: 'Adapters never import the composition root.' },
+            {
+              // Relative imports of the domain are allowed only inside its ports folder.
+              regex: '^(\\.\\./)+domain/(?!ports/)',
+              message: 'Adapters depend on domain/ports only (component diagram, ADR-0004).',
+            },
           ],
         },
       ],

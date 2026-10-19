@@ -1,4 +1,4 @@
-import { Intent } from './intent';
+import { Intent } from './ports/input-port';
 
 /** Frames a direction is held before it starts repeating (GDD §7). */
 const DAS = 10;
