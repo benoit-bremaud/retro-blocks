@@ -2,10 +2,6 @@ import { describe, expect, it } from 'vitest';
 import { MAX_GRAVITY_LEVEL, SUB_CELLS_PER_CELL, subCellsPerStep } from '../../src/domain/gravity';
 
 describe('Gravity', () => {
-  it('uses 256 sub-cells per cell', () => {
-    expect(SUB_CELLS_PER_CELL).toBe(256);
-  });
-
   it('level 1 is one cell per second (Guideline)', () => {
     expect(subCellsPerStep(1)).toBe(4);
   });
@@ -29,9 +25,12 @@ describe('Gravity', () => {
     expect(subCellsPerStep(0)).toBe(subCellsPerStep(1));
   });
 
-  it('returns integers only', () => {
-    for (let level = 1; level <= MAX_GRAVITY_LEVEL; level += 1) {
-      expect(Number.isInteger(subCellsPerStep(level))).toBe(true);
-    }
+  it.each([
+    [5, 12],
+    [8, 32],
+    [10, 67],
+    [15, 604],
+  ])('level %i falls %i sub-cells per step (Guideline curve)', (level, expected) => {
+    expect(subCellsPerStep(level)).toBe(expected);
   });
 });

@@ -23,7 +23,7 @@ describe('AutoShift', () => {
   });
 
   it('shifts right with +1', () => {
-    expect(run(new AutoShift(), R, R, 11)[10]).toBe(1);
+    expect(run(new AutoShift(), R, R, 15)).toEqual([1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1]);
   });
 
   it('restarts the charge after a release', () => {
@@ -37,7 +37,7 @@ describe('AutoShift', () => {
     const shift = new AutoShift();
     run(shift, L, L, 12);
     expect(shift.step(L | R, R)).toBe(1);
-    expect(run(shift, L | R, 0, 10)[9]).toBe(1);
+    expect(run(shift, L | R, 0, 11)).toEqual([0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0]);
   });
 
   it('resumes the other held direction, charge restarted and without an initial move, after a release', () => {

@@ -228,7 +228,8 @@ describe('Simulation: lock delay', () => {
       locked = sim.step(press(moves % 2 === 0 ? Intent.Left : Intent.Right)).locked;
       moves += 1;
     }
-    expect(moves).toBeLessThanOrEqual(16);
+    // Sitting on the floor, every grounded move spends one reset: the piece locks as the 15th is spent.
+    expect(moves).toBe(15);
   });
 });
 
@@ -461,6 +462,53 @@ describe('Simulation: T-spin', () => {
       [4, 18],
     ] as const;
     expect(rotateThenLock(blocked, [Intent.RotateCcw]).spin).toBe('Mini');
+  });
+
+  it('Full, pointing up: both top corners are front', () => {
+    const blocked = [
+      [3, 19],
+      [3, 21],
+      [5, 21],
+      [5, 19],
+    ] as const;
+    expect(rotateThenLock(blocked, [Intent.RotateCw, Intent.RotateCcw]).spin).toBe('Full');
+  });
+
+  it('Mini, pointing up: one top corner is empty', () => {
+    const blocked = [
+      [3, 19],
+      [3, 21],
+      [5, 19],
+    ] as const;
+    expect(rotateThenLock(blocked, [Intent.RotateCw, Intent.RotateCcw]).spin).toBe('Mini');
+  });
+
+  describe('is lost when the T moves after rotating', () => {
+    // Pointing left at (3,19): a one-cell fall to y = 18 meets three solid corners, with the
+    // top-left one empty, so it would be a Mini if the rotation still counted. (5,20) is a cell
+    // of the spawned T, hence the pocket is built after the spawn.
+    function rotatedIntoPocket(): { sim: Simulation } {
+      const board = new ObstacleBoard();
+      const sim = new Simulation(tFirstPrng(), 1, board);
+      board.block([3, 18], [5, 18], [5, 20], [4, 17]);
+      sim.step(press(Intent.RotateCcw));
+      expect(sim.view().active.rotation).toBe(3);
+      return { sim };
+    }
+
+    it('after a gravity fall', () => {
+      const { sim } = rotatedIntoPocket();
+      for (let i = 0; i < 4; i += 1) sim.step({ held: Intent.SoftDrop, pressed: 0 });
+      expect(sim.view().active.y).toBe(18);
+      expect(snapshot(sim.step(press(Intent.HardDrop))).spin).toBe('None');
+    });
+
+    it('after a hard drop that moves it', () => {
+      const { sim } = rotatedIntoPocket();
+      const out = snapshot(sim.step(press(Intent.HardDrop)));
+      expect(sim.view().cells.isOccupied(4, 18)).toBe(true);
+      expect(out.spin).toBe('None');
+    });
   });
 
   it('scores the spin with the lock', () => {

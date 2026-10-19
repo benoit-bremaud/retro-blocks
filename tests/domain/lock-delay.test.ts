@@ -63,6 +63,15 @@ describe('LockDelay', () => {
     expect(lock.tick(true)).toBe(false);
   });
 
+  it('a new lowest row also restores the frames', () => {
+    const lock = new LockDelay();
+    lock.reset(21);
+    tickMany(lock, true, 25);
+    lock.onDescend(20);
+    expect(tickMany(lock, true, 29).includes(true)).toBe(false);
+    expect(lock.tick(true)).toBe(true);
+  });
+
   it('descending to a row that is not a new lowest changes nothing', () => {
     const lock = new LockDelay();
     lock.reset(21);
@@ -79,6 +88,9 @@ describe('LockDelay', () => {
     lock.onDescend(5);
     lock.reset(21);
     lock.onDescend(10);
-    expect(tickMany(lock, true, 29).includes(true)).toBe(false);
+    for (let i = 0; i < 15; i += 1) lock.onMoveOrRotate(true);
+    // 10 is a new lowest row only because reset forgot the old lowest row (5): resets are back.
+    lock.onDescend(9);
+    expect(lock.tick(true)).toBe(false);
   });
 });

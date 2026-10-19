@@ -35,20 +35,20 @@ classDiagram
     -active: ActivePiece
     -bag: Bag7
     -shift: AutoShift
-    -lock: LockDelay
+    -lockDelay: LockDelay
     -score: Scoring
     -held: PieceKind?
     -holdUsed: bool
     -phase: Phase
     -clearFrames: int
     -gravitySub: int
-    -lastRotationKick: int?
+    -lastRotationKick: int
     +constructor(rng: Prng, startLevel: int, board: Board)
     +step(intent: IntentFrame) StepOutcome
     +view() SimView
     -tryHold()
     -detectSpin() SpinKind
-    -spawn(kind: PieceKind) bool
+    -spawn(kind: PieceKind)
   }
   class IntentFrame {
     +held: number
@@ -105,14 +105,10 @@ classDiagram
     +nextInt(max: int) int
   }
   class AutoShift {
-    +das = 10
-    +arr = 2
     -frames: int
     +step(held: number, pressed: number) int
   }
   class LockDelay {
-    +maxFrames = 30
-    +maxResets = 15
     -frames: int
     -resets: int
     -lowestY: int
@@ -129,10 +125,11 @@ classDiagram
     +level: int
     +lines: int
     +points: int
-    -combo: int  "consecutive clearing locks"
+    -combo: int
     -backToBack: bool
     +award(rows: int, spin: SpinKind)
-    +addDrop(cells: int, hard: bool)
+    +addSoftDrop(cells: int)
+    +addHardDrop(cells: int)
   }
   Simulation --> Board
   Simulation --> ActivePiece
@@ -151,7 +148,7 @@ classDiagram
 ## Rules carried by the model
 
 - **Construction:** `board` defaults to an empty `Board`; tests pass a prepared one. `StepOutcome` and `SimView` are reused objects: read them before the next `step` / `view`.
-- **Combo:** `combo` counts consecutive clearing locks; the bonus is 50 × (combo − 2) × level, so it starts at 0 on the 2nd.
+- **Combo:** `combo` counts consecutive clearing locks; the bonus is 50 × (combo − 2) × level: 0 on the 2nd clearing lock, 50 × level on the 3rd. `AutoShift` DAS 10 / ARR 2 and `LockDelay` 30 frames / 15 resets are module constants.
 - **Input:** `IntentFrame` bit flags (Left, Right, SoftDrop, HardDrop, RotateCw, RotateCcw, Hold,
   Pause), `held` and `pressed` as in retro-shmup's input port. Rotate, hard drop and hold fire on
   `pressed` only. `AutoShift` returns −1, 0 or +1 cells for this step (DAS 10, ARR 2).
@@ -175,7 +172,7 @@ classDiagram
   `tick` returns true when grounded and (frames ≥ 30 or resets ≥ 15).
 - **Hold:** `tryHold()` does nothing when `holdUsed`; otherwise swaps with `held` (empty → take
   `bag.next()`), respawns and sets `holdUsed`, cleared when the next piece locks.
-- **T-spin:** T only. `lastRotationKick` is 0 (no offset) … 4 (last SRS test), set by a successful
+- **T-spin:** T only. `lastRotationKick` is −1 (none), or 0 (no offset) … 4 (last SRS test), set by a successful
   rotation and cleared by any move or fall. Requires ≥ 3 of the 4 diagonal corners occupied;
   `Full` if both front corners are occupied or the kick was 4, otherwise `Mini`.
 - **Bag:** `preview(n)` appends a new shuffled bag while the queue holds fewer than n pieces.

@@ -17,7 +17,7 @@ export class AutoShift {
     const pressedLeft = (pressed & Intent.Left) !== 0;
     const pressedRight = (pressed & Intent.Right) !== 0;
 
-    // Both pressed on the same step: neither wins.
+    // Left and right pressed together cancel out and fall through, keeping the current direction.
     if (pressedLeft !== pressedRight) {
       this.direction = pressedLeft ? -1 : 1;
       this.frames = 0;

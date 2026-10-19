@@ -137,10 +137,36 @@ describe('Scoring', () => {
     expect(award(4).points).toBe(800);
   });
 
+  it('a Mini with lines is a difficult clear: it starts and keeps a back-to-back chain', () => {
+    const score = new Scoring(1);
+    score.award(4, 'None');
+    const before = score.points;
+    score.award(1, 'Mini');
+    expect(score.points - before).toBe(300);
+  });
+
+  it('a zero-line Mini does not break the chain', () => {
+    const score = new Scoring(1);
+    score.award(4, 'None');
+    score.award(0, 'Mini');
+    const before = score.points;
+    score.award(4, 'None');
+    expect(score.points - before).toBe(1200);
+  });
+
+  it('back-to-back multiplies the base by the level too', () => {
+    const score = new Scoring(3);
+    score.award(4, 'None');
+    score.award(0, 'None');
+    const before = score.points;
+    score.award(4, 'None');
+    expect(score.points - before).toBe(3600);
+  });
+
   it('adds soft and hard drop points, not multiplied by the level', () => {
     const score = new Scoring(9);
-    score.addDrop(5, false);
-    score.addDrop(7, true);
+    score.addSoftDrop(5);
+    score.addHardDrop(7);
     expect(score.points).toBe(5 + 14);
   });
 });

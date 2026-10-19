@@ -37,7 +37,7 @@ export interface BoardView {
 export interface SimView {
   readonly cells: BoardView;
   readonly active: ActivePiece;
-  /** Row the active piece would land on after a hard drop. */
+  /** Row the active piece would land on after a hard drop (equals `active.y` while Clearing). */
   readonly ghostY: number;
   readonly held: PieceKind | null;
   readonly next: readonly PieceKind[];
@@ -54,6 +54,7 @@ const CLEAR_FRAMES = 20;
 const PREVIEW_COUNT = 5;
 const SOFT_DROP_FACTOR = 20;
 const NO_KICK = -1;
+// Index of the last of the five SRS tests in `kicks`.
 const LAST_KICK = 4;
 const NO_ROWS: readonly number[] = [];
 const NO_KINDS: readonly PieceKind[] = [];
@@ -74,8 +75,9 @@ const SPAWNS: Readonly<Record<PieceKind, ActivePiece>> = {
 
 /**
  * The deterministic game: one `step` per 60 Hz tick, no clock, randomness only from the injected
- * `Prng` (UML 02-class, 03-sequence-piece-lifecycle). Step order: hold → rotate → shift → drop →
- * gravity → lock. After a top-out every later step is a no-op that reports `toppedOut`.
+ * `Prng` (UML system/02-class, gameplay/03-sequence-piece-lifecycle). Step order: hold → rotate →
+ * shift → then a hard drop (locks at once) or a soft-drop / gravity fall with lock delay. While
+ * Clearing, input is ignored. After a top-out every later step is a no-op that reports `toppedOut`.
  */
 export class Simulation {
   private readonly board: Board;
@@ -215,7 +217,7 @@ export class Simulation {
       this.active.y -= distance;
       this.lastRotationKick = NO_KICK;
     }
-    this.score.addDrop(distance, true);
+    this.score.addHardDrop(distance);
     this.lockPiece();
   }
 
@@ -231,7 +233,7 @@ export class Simulation {
     }
     if (dropped > 0) {
       this.lastRotationKick = NO_KICK;
-      if (soft) this.score.addDrop(dropped, false);
+      if (soft) this.score.addSoftDrop(dropped);
     }
     const grounded = !this.canDescend();
     // Gravity does not pile up against the floor or the stack.

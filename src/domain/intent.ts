@@ -1,4 +1,4 @@
-/** Input bit flags, as in retro-shmup's input port (UML 02-class). */
+/** Input bit flags, as in retro-shmup's input port (UML 02-class). `Pause` is handled by the scene machine: `Simulation` ignores it. */
 export const Intent = {
   Left: 1,
   Right: 2,

@@ -3,7 +3,7 @@ const MAX_FRAMES = 30;
 /** Grounded moves or rotations that may restart the countdown, per lowest row (GDD §3). */
 const MAX_RESETS = 15;
 
-/** Lock delay with the "lowest row" rule: reaching a new lowest row gives the resets back (UML 02-class). */
+/** Lock delay with the "lowest row" rule: reaching a new lowest row gives the resets back (UML 02-class). `y` grows upward, row 0 is the floor. */
 export class LockDelay {
   private frames = 0;
   private resets = 0;
