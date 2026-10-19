@@ -1,12 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import type { ActivePiece } from '../../src/domain/active-piece';
 import type { SfxId } from '../../src/domain/ports/audio-port';
+import { messages } from '../../src/domain/i18n/messages';
 import { RunPresenter } from '../../src/domain/presentation/run-presenter';
 import { CELL, FIELD_X, FIELD_Y, rowTop } from '../../src/domain/presentation/layout';
 import { Palette } from '../../src/domain/presentation/palette';
 import type { SimView, StepOutcome } from '../../src/domain/simulation';
 import { RecordingAudio } from '../support/recording-audio';
 import { RecordingPort } from '../support/recording-port';
+
+const EN = messages('en');
 
 function view(overrides: Partial<SimView> = {}, locked: Record<string, number> = {}): SimView {
   const active: ActivePiece = { kind: 'T', rotation: 0, x: 3, y: 10 };
@@ -64,21 +67,21 @@ describe('RunPresenter.announce', () => {
 describe('RunPresenter.draw', () => {
   it('clears the screen and draws a locked cell in its kind colour at its pixel', () => {
     const port = new RecordingPort();
-    new RunPresenter().draw(view({}, { '0,0': 1 }), 'Run', port);
+    new RunPresenter().draw(view({}, { '0,0': 1 }), 'Run', port, EN);
     expect(port.clears).toEqual([Palette.background]);
     expect(port.hasRect(FIELD_X, rowTop(0), CELL, CELL, colourOf(1))).toBe(true);
   });
 
   it('draws cells of the spawn margin above the visible field', () => {
     const port = new RecordingPort();
-    new RunPresenter().draw(view({}, { '4,21': 3 }), 'Run', port);
+    new RunPresenter().draw(view({}, { '4,21': 3 }), 'Run', port, EN);
     expect(rowTop(21)).toBeLessThan(FIELD_Y);
     expect(port.hasRect(FIELD_X + 4 * CELL, rowTop(21), CELL, CELL, colourOf(3))).toBe(true);
   });
 
   it('draws the active piece and its ghost when they differ', () => {
     const port = new RecordingPort();
-    new RunPresenter().draw(view({ ghostY: 0 }), 'Run', port);
+    new RunPresenter().draw(view({ ghostY: 0 }), 'Run', port, EN);
     // T rotation 0 holds (1, 2): active at row 12, ghost at row 2, in column 4.
     expect(port.hasRect(FIELD_X + 4 * CELL, rowTop(12), CELL, CELL, colourOf(3))).toBe(true);
     expect(port.hasRect(FIELD_X + 4 * CELL, rowTop(2), CELL, CELL, Palette.ghost)).toBe(true);
@@ -86,13 +89,18 @@ describe('RunPresenter.draw', () => {
 
   it('skips the ghost when it sits on the piece', () => {
     const port = new RecordingPort();
-    new RunPresenter().draw(view({ ghostY: 10 }), 'Run', port);
+    new RunPresenter().draw(view({ ghostY: 10 }), 'Run', port, EN);
     expect(port.rects.some((r) => r.colour === Palette.ghost)).toBe(false);
   });
 
   it('does not draw the active piece again while Clearing', () => {
     const port = new RecordingPort();
-    new RunPresenter().draw(view({ phase: 'Clearing', clearFrames: 10, ghostY: 10 }), 'Run', port);
+    new RunPresenter().draw(
+      view({ phase: 'Clearing', clearFrames: 10, ghostY: 10 }),
+      'Run',
+      port,
+      EN,
+    );
     expect(port.hasRect(FIELD_X + 4 * CELL, rowTop(12), CELL, CELL, colourOf(3))).toBe(false);
   });
 
@@ -103,6 +111,7 @@ describe('RunPresenter.draw', () => {
       view({ phase: 'Clearing', clearFrames: 16, clearingRows: rows }),
       'Run',
       lit,
+      EN,
     );
     expect(lit.hasRect(FIELD_X, rowTop(5), 160, CELL, Palette.flash)).toBe(true);
     expect(lit.hasRect(FIELD_X, rowTop(6), 160, CELL, Palette.flash)).toBe(true);
@@ -111,6 +120,7 @@ describe('RunPresenter.draw', () => {
       view({ phase: 'Clearing', clearFrames: 12, clearingRows: rows }),
       'Run',
       dark,
+      EN,
     );
     expect(dark.rects.some((r) => r.colour === Palette.flash)).toBe(false);
   });
@@ -118,21 +128,21 @@ describe('RunPresenter.draw', () => {
   it('writes score, level and lines, and follows a change', () => {
     const presenter = new RunPresenter();
     const first = new RecordingPort();
-    presenter.draw(view(), 'Run', first);
+    presenter.draw(view(), 'Run', first, EN);
     expect(first.hasText('1200')).toBe(true);
     expect(first.hasText('3')).toBe(true);
     expect(first.hasText('14')).toBe(true);
     const second = new RecordingPort();
-    presenter.draw(view({ points: 1300 }), 'Run', second);
+    presenter.draw(view({ points: 1300 }), 'Run', second, EN);
     expect(second.hasText('1300')).toBe(true);
     expect(second.hasText('14')).toBe(true);
   });
 
   it('draws five next pieces and the held piece only when there is one', () => {
     const none = new RecordingPort();
-    new RunPresenter().draw(view(), 'Run', none);
+    new RunPresenter().draw(view(), 'Run', none, EN);
     const withHold = new RecordingPort();
-    new RunPresenter().draw(view({ held: 'L' }), 'Run', withHold);
+    new RunPresenter().draw(view({ held: 'L' }), 'Run', withHold, EN);
     const lCell = colourOf(7);
     expect(none.rects.some((r) => r.colour === lCell)).toBe(false);
     expect(withHold.rects.filter((r) => r.colour === lCell && r.width === 12)).toHaveLength(4);
@@ -142,7 +152,7 @@ describe('RunPresenter.draw', () => {
 
   it('centres the I preview in its next slot and the pause title in the field', () => {
     const port = new RecordingPort();
-    new RunPresenter().draw(view(), 'Paused', port);
+    new RunPresenter().draw(view(), 'Paused', port, EN);
     // The first next piece is an I: four 12 px cells side by side from x 256, at y 70.
     for (let i = 0; i < 4; i += 1)
       expect(port.hasRect(256 + i * 12, 70, 12, 12, colourOf(1))).toBe(true);
@@ -153,14 +163,14 @@ describe('RunPresenter.draw', () => {
 
   it('shows the pause and game over overlays', () => {
     const paused = new RecordingPort();
-    new RunPresenter().draw(view(), 'Paused', paused);
+    new RunPresenter().draw(view(), 'Paused', paused, EN);
     expect(paused.hasText('PAUSED')).toBe(true);
     const over = new RecordingPort();
-    new RunPresenter().draw(view(), 'GameOver', over);
+    new RunPresenter().draw(view(), 'GameOver', over, EN);
     expect(over.hasText('GAME OVER')).toBe(true);
     expect(over.hasText('PRESS ENTER')).toBe(true);
     const running = new RecordingPort();
-    new RunPresenter().draw(view(), 'Run', running);
+    new RunPresenter().draw(view(), 'Run', running, EN);
     expect(running.hasText('PAUSED')).toBe(false);
   });
 });

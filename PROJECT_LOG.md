@@ -42,3 +42,11 @@
 - Lint rule added: an adapter imports only `domain/ports/**`; `Intent` / `IntentFrame` moved to `ports/input-port.ts` (+ `Confirm`), `BoardView.cellAt` added (shared cell code for render).
 - Playwright smoke (Chromium, Firefox, WebKit): boot, hard drop, pause, top-out, restart, no console error; canvas pixels only, no test hook. QA screenshots in `docs/architecture/qa/2026-10-19-brick5/`.
 - Gotcha: the ghost is a translucent grey over the field, so pixel probes tell a locked cell from the ghost by colour saturation.
+
+## 2026-10-19 — PR #8 merged (brick 5)
+- Squash `f2d9c76` on `main`: FrameLoop, scenes, presenter, adapters and smoke test (`feat(engine)`).
+
+## 2026-10-19 — Brick 6: menus, Hall of Fame, i18n, audio (branch `feat/ui`, issue #14)
+- `Scene` per screen (Menu, Settings, HallOfFame, NameEntry, Run) behind `SceneMachine`; `SavePort` + `LocalStorageSave` (validated, never throws, versioned keys); `HallOfFame` pure functions; EN/FR `MessageSet` in unaccented capitals; `AudioSynth` (WebAudio oscillators, no asset, lazy context, volume/mute).
+- Owner-validated MCDA: scene per screen 415/500 (vs switch 315); arcade 3-letter entry on existing intents 480 (vs typed text 300); EN/FR catalogue, font unchanged 445 (vs EN only 385, accented font 345); WebAudio synthesis 450 (vs samples 295).
+- Decisions in passing: a qualifying run goes straight to name entry; key remapping dropped from the brick; `HALL_SIZE` lives in the save port (adapters may import ports only); `SILENT_AUDIO` removed.

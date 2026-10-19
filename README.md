@@ -2,7 +2,7 @@
 
 Browser falling-block puzzle game (codename). TypeScript strict + native Canvas 2D + Vite.
 
-**Status:** brick 5 — first playable build (keyboard, ghost, hold, next queue, line-clear flash, pause, game over); menus, hall of fame and audio come in brick 6 (brick plan in ADR-0003).
+**Status:** brick 6 — menu, settings (English / French, volume, mute), hall of fame (top 10, saved in the browser), synthesised sound effects, on top of the playable game (brick plan in ADR-0003).
 
 ## Develop
 
