@@ -6,7 +6,6 @@ import { SCREEN_HEIGHT, SCREEN_WIDTH } from '../domain/presentation/layout';
 import { SceneMachine } from '../domain/scenes/scene-machine';
 import { FrameLoop } from './frame-loop';
 import { computeViewport } from './viewport';
-import './style.css';
 
 // Composition root (ADR-0004): the only place that touches window and document.
 const found = document.querySelector<HTMLCanvasElement>('#screen');
