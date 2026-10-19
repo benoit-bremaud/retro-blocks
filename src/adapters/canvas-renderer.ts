@@ -1,8 +1,5 @@
-import type { RenderPort } from '../domain/ports/render-port';
+import { FONT, type RenderPort } from '../domain/ports/render-port';
 import { glyph } from './bitmap-font';
-
-const GLYPH_COLUMNS = 3;
-const GLYPH_ROWS = 5;
 
 /**
  * Draws the logical screen on a 2D canvas context received from the composition root. The integer
@@ -47,11 +44,11 @@ export class CanvasRenderer implements RenderPort {
     for (let i = 0; i < text.length; i += 1) {
       const rows = glyph(text.codePointAt(i) ?? -1);
       if (rows === undefined) throw new RangeError(`drawText: no glyph for "${text.charAt(i)}"`);
-      const left = x + i * (GLYPH_COLUMNS + 1) * scale;
-      for (let row = 0; row < GLYPH_ROWS; row += 1) {
+      const left = x + i * (FONT.glyphWidth + FONT.advance) * scale;
+      for (let row = 0; row < FONT.glyphHeight; row += 1) {
         const bits = rows[row] ?? 0;
-        for (let column = 0; column < GLYPH_COLUMNS; column += 1) {
-          if ((bits & (1 << (GLYPH_COLUMNS - 1 - column))) !== 0) {
+        for (let column = 0; column < FONT.glyphWidth; column += 1) {
+          if ((bits & (1 << (FONT.glyphWidth - 1 - column))) !== 0) {
             this.context.fillRect(left + column * scale, y + row * scale, scale, scale);
           }
         }

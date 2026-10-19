@@ -28,7 +28,7 @@ export class SceneMachine implements FrameTarget {
     this.sim = this.startRun();
   }
 
-  /** The scene being played; read by tests and by the composition root. */
+  /** The scene being played; read by tests. */
   get current(): SceneKind {
     return this.scene;
   }

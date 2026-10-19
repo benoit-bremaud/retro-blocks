@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Clock } from '../../src/domain/ports/clock';
 import type { FrameTarget } from '../../src/domain/ports/frame-target';
 import type { InputPort, IntentFrame } from '../../src/domain/ports/input-port';
-import { FrameLoop, MAX_FRAME_MS, STEP_MS } from '../../src/app/frame-loop';
+import { FrameLoop, STEP_MS } from '../../src/app/frame-loop';
 
 class ManualClock implements Clock {
   ms = 0;
@@ -72,7 +72,8 @@ describe('FrameLoop', () => {
     h.frame(0);
     const before = h.steps.length;
     h.frame(10_000);
-    expect(h.steps.length - before).toBeLessThanOrEqual(Math.ceil(MAX_FRAME_MS / STEP_MS) + 1);
+    // 250 ms plus the half-step seed: exactly 15 whole steps.
+    expect(h.steps.length - before).toBe(15);
   });
 
   it('reads the input once per step into the frame it steps with', () => {
@@ -90,6 +91,8 @@ describe('FrameLoop', () => {
     const before = h.steps.length;
     h.frame(-100);
     expect(h.steps.length).toBe(before);
+    h.frame(STEP_MS);
+    expect(h.steps.length).toBe(before + 1);
   });
 
   it('does nothing after stop, and a second start does not double the chain', () => {
@@ -126,7 +129,10 @@ describe('FrameLoop', () => {
     h.clock.ms += 5000;
     h.loop.start();
     const before = h.steps.length;
+    // The origin is reset: no catch-up for the 5 s stopped, and the half-step seed gives one step a frame later.
     h.frame(0);
-    expect(h.steps.length - before).toBeLessThanOrEqual(1);
+    expect(h.steps.length - before).toBe(0);
+    h.frame(STEP_MS);
+    expect(h.steps.length - before).toBe(1);
   });
 });

@@ -37,7 +37,7 @@ globalThis.addEventListener('resize', fitCanvas);
 
 const input = new KeyboardInput();
 globalThis.addEventListener('keydown', (event) => {
-  if (input.keyDown(event.code, event.repeat)) event.preventDefault();
+  if (input.keyDown(event.code, event.repeat, event.metaKey)) event.preventDefault();
 });
 globalThis.addEventListener('keyup', (event) => {
   input.keyUp(event.code);

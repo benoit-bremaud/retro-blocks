@@ -1,6 +1,6 @@
 import type { ActivePiece } from './active-piece';
 import { BOARD_HEIGHT, BOARD_WIDTH, VISIBLE_ROWS } from './board-size';
-import { PIECE_KINDS } from './piece-kind';
+import { cellCode } from './piece-kind';
 import { shape } from './srs';
 
 /** The 10 × 40 playfield; `y` runs bottom to top and rows 20+ are the spawn buffer (UML 02-class). */
@@ -40,7 +40,7 @@ export class Board {
    */
   lock(piece: ActivePiece): readonly number[] {
     if (!this.fits(piece)) throw new RangeError('Board.lock: the piece does not fit');
-    const code = PIECE_KINDS.indexOf(piece.kind) + 1;
+    const code = cellCode(piece.kind);
     const s = shape(piece.kind, piece.rotation);
     this.cells[(piece.y + s[0].y) * BOARD_WIDTH + piece.x + s[0].x] = code;
     this.cells[(piece.y + s[1].y) * BOARD_WIDTH + piece.x + s[1].x] = code;

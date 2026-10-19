@@ -44,8 +44,25 @@ describe('KeyboardInput', () => {
     expect(read(input).held).toBe(0);
   });
 
+  it('ignores a key pressed with Cmd held and releases the others', () => {
+    const input = new KeyboardInput();
+    input.keyDown('ArrowLeft', false);
+    expect(input.keyDown('KeyZ', false, true)).toBe(false);
+    expect(read(input)).toEqual({ held: Intent.Left, pressed: Intent.Left });
+    expect(read(input)).toEqual({ held: 0, pressed: 0 });
+    // The Z that Cmd swallowed does not block the next real press.
+    input.keyDown('KeyZ', false);
+    expect(read(input).pressed).toBe(Intent.RotateCcw);
+  });
+
   it('maps every game key to its intent', () => {
     const expected: [string, number][] = [
+      ['ArrowLeft', Intent.Left],
+      ['ArrowDown', Intent.SoftDrop],
+      ['Space', Intent.HardDrop],
+      ['ArrowUp', Intent.RotateCw],
+      ['KeyX', Intent.RotateCw],
+      ['ShiftRight', Intent.Hold],
       ['ArrowRight', Intent.Right],
       ['KeyZ', Intent.RotateCcw],
       ['KeyC', Intent.Hold],

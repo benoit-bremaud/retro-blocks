@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import type { ActivePiece } from '../../src/domain/active-piece';
-import type { AudioPort, SfxId } from '../../src/domain/ports/audio-port';
+import type { SfxId } from '../../src/domain/ports/audio-port';
 import { RunPresenter } from '../../src/domain/presentation/run-presenter';
 import { CELL, FIELD_X, FIELD_Y, rowTop } from '../../src/domain/presentation/layout';
 import { Palette } from '../../src/domain/presentation/palette';
 import type { SimView, StepOutcome } from '../../src/domain/simulation';
+import { RecordingAudio } from '../support/recording-audio';
 import { RecordingPort } from '../support/recording-port';
 
 function view(overrides: Partial<SimView> = {}, locked: Record<string, number> = {}): SimView {
@@ -35,13 +36,6 @@ function colourOf(code: number): string {
 
 function outcome(overrides: Partial<StepOutcome> = {}): StepOutcome {
   return { clearedRows: [], spin: 'None', locked: false, toppedOut: false, ...overrides };
-}
-
-class RecordingAudio implements AudioPort {
-  readonly played: SfxId[] = [];
-  play(sfx: SfxId): void {
-    this.played.push(sfx);
-  }
 }
 
 describe('RunPresenter.announce', () => {
@@ -121,7 +115,7 @@ describe('RunPresenter.draw', () => {
     expect(dark.rects.some((r) => r.colour === Palette.flash)).toBe(false);
   });
 
-  it('writes score, level and lines, converting a number only when it changes', () => {
+  it('writes score, level and lines, and follows a change', () => {
     const presenter = new RunPresenter();
     const first = new RecordingPort();
     presenter.draw(view(), 'Run', first);
@@ -144,6 +138,17 @@ describe('RunPresenter.draw', () => {
     expect(withHold.rects.filter((r) => r.colour === lCell && r.width === 12)).toHaveLength(4);
     // Five slots: I O S Z J, four cells each.
     expect(none.rects.filter((r) => r.width === 12 && r.height === 12)).toHaveLength(20);
+  });
+
+  it('centres the I preview in its next slot and the pause title in the field', () => {
+    const port = new RecordingPort();
+    new RunPresenter().draw(view(), 'Paused', port);
+    // The first next piece is an I: four 12 px cells side by side from x 256, at y 70.
+    for (let i = 0; i < 4; i += 1)
+      expect(port.hasRect(256 + i * 12, 70, 12, 12, colourOf(1))).toBe(true);
+    // "PAUSED" at scale 2 is 46 px wide: centred on the field's middle x 160, above its middle y 192.
+    expect(port.texts.find((t) => t.text === 'PAUSED')).toMatchObject({ x: 137, y: 180, scale: 2 });
+    expect(port.hasText('PRESS P')).toBe(true);
   });
 
   it('shows the pause and game over overlays', () => {

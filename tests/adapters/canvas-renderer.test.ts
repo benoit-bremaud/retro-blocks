@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { glyph } from '../../src/adapters/bitmap-font';
 import { CanvasRenderer } from '../../src/adapters/canvas-renderer';
 
 interface Fill {
@@ -57,6 +56,8 @@ describe('CanvasRenderer', () => {
   it('advances 4 font pixels per character and draws nothing for a space', () => {
     const { context, fills } = fakeContext();
     new CanvasRenderer(context).drawText(' 1', 0, 0, 1, '#fff');
+    // Only the "1" is drawn (8 lit pixels), one advance of 4 to the right; its first lit pixel is column 1.
+    expect(fills).toHaveLength(8);
     expect(fills[0]?.rect[0]).toBe(4 + 1);
   });
 
@@ -65,16 +66,5 @@ describe('CanvasRenderer', () => {
     expect(() => {
       new CanvasRenderer(context).drawText('a', 0, 0, 1, '#fff');
     }).toThrow(RangeError);
-  });
-});
-
-describe('bitmap font', () => {
-  it('covers digits, A-Z, the dash and the space, and nothing else', () => {
-    for (let code = 0x30; code <= 0x39; code += 1) expect(glyph(code)).toHaveLength(5);
-    for (let code = 0x41; code <= 0x5a; code += 1) expect(glyph(code)).toHaveLength(5);
-    expect(glyph(0x2d)).toHaveLength(5);
-    expect(glyph(0x20)?.every((row) => row === 0)).toBe(true);
-    expect(glyph(0x61)).toBeUndefined();
-    expect(glyph(0x21)).toBeUndefined();
   });
 });

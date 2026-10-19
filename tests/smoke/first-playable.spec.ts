@@ -42,10 +42,22 @@ async function lockedCells(page: Page): Promise<number> {
   return (await bottomRow(page)).filter(isLocked).length;
 }
 
-/** Presses a key and lets a few frames pass, so the loop reads it. */
+/**
+ * Presses a key, then waits for two animation frames so the loop has read it (the page latches a
+ * press until the next step, and two presses in one frame would merge): frames, not a sleep.
+ */
 async function tap(page: Page, key: string): Promise<void> {
   await page.keyboard.press(key);
-  await page.waitForTimeout(60);
+  await page.evaluate(
+    () =>
+      new Promise<void>((done) =>
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            done();
+          });
+        }),
+      ),
+  );
 }
 
 test('boots, plays a drop, pauses, tops out and restarts', async ({ page }) => {
@@ -55,41 +67,43 @@ test('boots, plays a drop, pauses, tops out and restarts', async ({ page }) => {
     if (message.type() === 'error') errors.push(message.text());
   });
 
-  await page.setViewportSize({ width: 800, height: 900 });
-  await page.goto('/');
-  await page.waitForTimeout(300);
-
-  // Booted: the canvas is drawn at an integer scale and the floor holds no locked cell.
-  const size = await page.evaluate(() => {
-    const canvas = document.querySelector<HTMLCanvasElement>('#screen');
-    return { width: canvas?.width ?? 0, height: canvas?.height ?? 0 };
+  await test.step('boots at an integer scale with an empty floor', async () => {
+    await page.setViewportSize({ width: 800, height: 900 });
+    await page.goto('/');
+    // The first frame has drawn once the field background is on the canvas.
+    await expect.poll(() => bottomRow(page)).not.toEqual([]);
+    const size = await page.evaluate(() => {
+      const canvas = document.querySelector<HTMLCanvasElement>('#screen');
+      return { width: canvas?.width ?? 0, height: canvas?.height ?? 0 };
+    });
+    expect(size.width % 320).toBe(0);
+    expect(size.width).toBeGreaterThanOrEqual(320);
+    expect(await lockedCells(page)).toBe(0);
   });
-  expect(size.width % 320).toBe(0);
-  expect(size.width).toBeGreaterThanOrEqual(320);
-  expect(await lockedCells(page)).toBe(0);
 
-  // A hard drop locks the first piece on the floor.
-  await tap(page, 'Space');
-  const locked = await lockedCells(page);
-  expect(locked).toBeGreaterThanOrEqual(1);
-  expect(locked).toBeLessThanOrEqual(4);
+  let before: number[][] = [];
+  await test.step('a hard drop locks the first piece on the floor', async () => {
+    await tap(page, 'Space');
+    await expect.poll(() => lockedCells(page)).toBeGreaterThanOrEqual(1);
+    expect(await lockedCells(page)).toBeLessThanOrEqual(4);
+    before = await bottomRow(page);
+  });
 
-  // Pause dims the field; the same key resumes it.
-  const before = await bottomRow(page);
-  await tap(page, 'KeyP');
-  const paused = await bottomRow(page);
-  expect(paused).not.toEqual(before);
-  await tap(page, 'KeyP');
-  expect(await bottomRow(page)).toEqual(before);
+  await test.step('pause dims the field and the same key resumes it', async () => {
+    await tap(page, 'KeyP');
+    await expect.poll(() => bottomRow(page)).not.toEqual(before);
+    await tap(page, 'KeyP');
+    await expect.poll(() => bottomRow(page)).toEqual(before);
+  });
 
-  // Pieces dropped at the spawn column pile up without ever completing a row, until top-out.
-  for (let i = 0; i < 30; i += 1) await tap(page, 'Space');
-  const over = await bottomRow(page);
-  expect(over).not.toEqual(before);
-
-  // Enter starts a new run: the floor is empty again.
-  await tap(page, 'Enter');
-  expect(await lockedCells(page)).toBe(0);
+  await test.step('a stack to the ceiling ends the run, and Enter starts a new one', async () => {
+    // Pieces dropped at the spawn column pile up without ever completing a row.
+    for (let i = 0; i < 30; i += 1) await tap(page, 'Space');
+    // The game over overlay dims the stack, so the floor row no longer shows its first colours.
+    await expect.poll(() => bottomRow(page)).not.toEqual(before);
+    await tap(page, 'Enter');
+    await expect.poll(() => lockedCells(page)).toBe(0);
+  });
 
   expect(errors).toEqual([]);
 });

@@ -12,13 +12,13 @@ classDiagram
   }
   class InputPort {
     <<interface>>
-    +read(into: IntentFrame)
+    +read(into: MutableIntentFrame)
   }
   class RenderPort {
     <<interface>>
-    +clear()
+    +clear(colour)
     +fillRect(x, y, w, h, colour)
-    +drawText(text, x, y, colour)
+    +drawText(text, x, y, scale, colour)
   }
   class AudioPort {
     <<interface>>
@@ -37,6 +37,7 @@ classDiagram
   class SceneMachine {
     -scene: Run | Paused | GameOver
     -sim: Simulation
+    +current: SceneKind
     +step(frame: IntentFrame)
     +render()
   }
@@ -46,7 +47,7 @@ classDiagram
   }
   class Palette {
     <<data>>
-    +cellColour(code)
+    +cell[code], cellLight[code]
     +ghost, flash, background
   }
   class KeyboardInput
@@ -54,7 +55,7 @@ classDiagram
   class PerformanceClock
   class Viewport {
     <<function>>
-    +computeScale(cssW, cssH, ratio) int
+    +computeViewport(logicalW, logicalH, cssW, cssH, ratio) Viewport
   }
   FrameLoop --> Clock
   FrameLoop --> InputPort
@@ -80,7 +81,7 @@ classDiagram
 | Right panel | x 240–320 | NEXT: 5 pieces in 12 px mini cells |
 | Overlay | playfield | PAUSED or GAME OVER + "PRESS ENTER" on a dim layer |
 
-The canvas is scaled by an integer factor (nearest neighbour, `computeScale` = largest integer that fits, minimum 1).
+The canvas is scaled by an integer factor (nearest neighbour, `computeViewport`: largest integer that fits, minimum 1, a smaller window scrolls).
 
 ## Rules carried by the model
 
@@ -91,3 +92,4 @@ The canvas is scaled by an integer factor (nearest neighbour, `computeScale` = l
 - **RunPresenter:** draws only from `SimView`, no allocation in `draw` (index loops, reused scratch). `active` is not drawn while `phase` is Clearing. The ghost uses `ghostY` and is skipped when it equals `active.y`. During Clearing, `clearingRows` flash (alternating every 4 steps from `clearFrames`).
 - **Audio:** `announce` plays `lock`, `clear` (1 to 4 rows: `clear1`…), `spin`, `gameOver` through `AudioPort`; `main.ts` wires `SILENT_AUDIO` until brick 6.
 - **Text:** the bitmap font is copied from retro-shmup and lives in the adapter; the port only takes strings (digits, A–Z, space, `-`); the presenter never passes another character.
+- **Key with Cmd held:** `KeyboardInput.keyDown(code, repeat, meta)` ignores it and releases every key, because macOS sends no `keyup` for a key pressed under Cmd.

@@ -18,7 +18,8 @@ const KEY_MAP: Readonly<Record<string, number>> = {
   NumpadEnter: Intent.Confirm,
 };
 
-const BIT_COUNT = 9;
+// One counter per Intent flag: derived, so a new flag is never silently dropped from `held`.
+const BIT_COUNT = Object.keys(Intent).length;
 
 /** Index of a single-bit flag, to count the keys down per intent. */
 function bitIndex(flag: number): number {
@@ -38,9 +39,15 @@ export class KeyboardInput implements InputPort {
   /**
    * Records a key going down. Returns true when the browser's default action must be prevented
    * (a mapped key, auto-repeats included, so a held arrow never scrolls the page); `Escape` keeps
-   * its default so it can still leave fullscreen.
+   * its default so it can still leave fullscreen. A key pressed with Cmd held is a browser or OS
+   * shortcut whose `keyup` never arrives (macOS): it is ignored and releases every key, so
+   * nothing stays stuck.
    */
-  keyDown(code: string, repeat: boolean): boolean {
+  keyDown(code: string, repeat: boolean, meta = false): boolean {
+    if (meta) {
+      this.releaseAll();
+      return false;
+    }
     const flag = KEY_MAP[code];
     if (flag === undefined) return false;
     if (!repeat && !this.down.has(code)) {

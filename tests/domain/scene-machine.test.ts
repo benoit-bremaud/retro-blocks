@@ -1,18 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import type { AudioPort, SfxId } from '../../src/domain/ports/audio-port';
 import { Intent, type IntentFrame } from '../../src/domain/ports/input-port';
 import { SceneMachine } from '../../src/domain/scenes/scene-machine';
+import { Palette } from '../../src/domain/presentation/palette';
+import { RecordingAudio } from '../support/recording-audio';
 import { RecordingPort } from '../support/recording-port';
 
 const IDLE: IntentFrame = { held: 0, pressed: 0 };
 const press = (flag: number): IntentFrame => ({ held: flag, pressed: flag });
-
-class RecordingAudio implements AudioPort {
-  readonly played: SfxId[] = [];
-  play(sfx: SfxId): void {
-    this.played.push(sfx);
-  }
-}
 
 function machine(seeds: number[] = [1, 2, 3]): {
   scenes: SceneMachine;
@@ -79,5 +73,47 @@ describe('SceneMachine', () => {
     scenes.step(press(Intent.Confirm));
     expect(scenes.current).toBe('Run');
     expect(used()).toBe(2);
+  });
+
+  it('ignores Confirm during a run and Pause on the game over screen', () => {
+    const { scenes } = machine();
+    scenes.step(press(Intent.Confirm));
+    expect(scenes.current).toBe('Run');
+    playToGameOver(scenes);
+    scenes.step(press(Intent.Pause));
+    expect(scenes.current).toBe('GameOver');
+  });
+
+  it('lets Pause win over a hard drop pressed on the same step', () => {
+    const { scenes, audio } = machine();
+    scenes.step(press(Intent.Pause | Intent.HardDrop));
+    expect(scenes.current).toBe('Paused');
+    expect(audio.played).toEqual([]);
+  });
+
+  it('draws the same frame while paused: the simulation does not move', () => {
+    const { scenes, port } = machine();
+    scenes.step(press(Intent.Pause));
+    scenes.render();
+    const first = port.rects.length;
+    for (let i = 0; i < 120; i += 1) scenes.step(IDLE);
+    scenes.render();
+    expect(port.rects.slice(first).map((r) => r.y)).toEqual(
+      port.rects.slice(0, first).map((r) => r.y),
+    );
+  });
+
+  it('starts a retry on an empty field', () => {
+    const { scenes, port } = machine();
+    scenes.step(press(Intent.HardDrop));
+    playToGameOver(scenes);
+    scenes.step(press(Intent.Confirm));
+    scenes.render();
+    // A locked cell of the floor row would be a 16 px square at y 336 in a piece colour (the ghost is translucent).
+    expect(
+      port.rects.some(
+        (r) => r.y === 336 && r.width === 16 && r.height === 16 && r.colour !== Palette.ghost,
+      ),
+    ).toBe(false);
   });
 });

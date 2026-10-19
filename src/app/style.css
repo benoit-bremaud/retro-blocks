@@ -1,17 +1,16 @@
 html,
 body {
   margin: 0;
-  height: 100%;
   background: #0b0b14;
-  overflow: hidden;
 }
 
 body {
   display: flex;
-  align-items: center;
-  justify-content: center;
+  min-height: 100vh;
 }
 
+/* `margin: auto` centres in both axes, and a window smaller than the screen scrolls instead of clipping it. */
 #screen {
+  margin: auto;
   image-rendering: pixelated;
 }

@@ -1,4 +1,4 @@
-/** How the logical screen maps onto the window (ADR-0014). */
+/** How the logical screen maps onto the window (integer scale, as retro-shmup ADR-0014). */
 export interface Viewport {
   /** Integer factor, in device pixels per logical pixel. */
   readonly scale: number;

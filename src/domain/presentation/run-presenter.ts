@@ -1,9 +1,19 @@
 import type { AudioPort, SfxId } from '../ports/audio-port';
 import { FONT, type RenderPort } from '../ports/render-port';
-import { PIECE_KINDS, type PieceKind } from '../piece-kind';
+import { BOARD_WIDTH } from '../board-size';
+import { cellCode, type PieceKind } from '../piece-kind';
 import { shape } from '../srs';
 import type { StepOutcome, SimView } from '../simulation';
-import { CELL, FIELD_HEIGHT, FIELD_WIDTH, FIELD_X, FIELD_Y, MINI_CELL, rowTop } from './layout';
+import {
+  CELL,
+  DRAWN_ROWS,
+  FIELD_HEIGHT,
+  FIELD_WIDTH,
+  FIELD_X,
+  FIELD_Y,
+  MINI_CELL,
+  rowTop,
+} from './layout';
 import { Palette } from './palette';
 
 /** Which scene is drawn; the scene machine owns the transitions (UML gameplay/02-state). */
@@ -88,10 +98,10 @@ export class RunPresenter {
   private drawField(view: SimView, port: RenderPort): void {
     port.fillRect(FIELD_X, 0, FIELD_WIDTH, FIELD_Y, Palette.margin);
     port.fillRect(FIELD_X, FIELD_Y, FIELD_WIDTH, FIELD_HEIGHT, Palette.field);
-    for (let x = 1; x < 10; x += 1)
+    for (let x = 1; x < BOARD_WIDTH; x += 1)
       port.fillRect(FIELD_X + x * CELL, FIELD_Y, 1, FIELD_HEIGHT, Palette.grid);
-    for (let y = 0; y < 22; y += 1) {
-      for (let x = 0; x < 10; x += 1) {
+    for (let y = 0; y < DRAWN_ROWS; y += 1) {
+      for (let x = 0; x < BOARD_WIDTH; x += 1) {
         const code = view.cells.cellAt(x, y);
         if (code !== 0) drawCell(port, FIELD_X + x * CELL, rowTop(y), CELL, code);
       }
@@ -103,7 +113,7 @@ export class RunPresenter {
   private drawActive(view: SimView, port: RenderPort): void {
     const { kind, rotation, x, y } = view.active;
     const s = shape(kind, rotation);
-    const code = PIECE_KINDS.indexOf(kind) + 1;
+    const code = cellCode(kind);
     if (view.ghostY !== y) {
       for (let i = 0; i < 4; i += 1) {
         const cell = s[i];
@@ -183,7 +193,7 @@ function drawPreview(port: RenderPort, kind: PieceKind, x: number, y: number): v
   const s = shape(kind, 0);
   const left = x + Math.floor((BOX_WIDTH - b.width * MINI_CELL) / 2);
   const top = y + Math.floor((3 * MINI_CELL - b.height * MINI_CELL) / 2);
-  const code = PIECE_KINDS.indexOf(kind) + 1;
+  const code = cellCode(kind);
   for (let i = 0; i < 4; i += 1) {
     const cell = s[i];
     if (cell === undefined) continue;

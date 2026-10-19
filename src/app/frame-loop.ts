@@ -6,8 +6,8 @@ import type { InputPort, MutableIntentFrame } from '../domain/ports/input-port';
 const STEPS_PER_SECOND = 60;
 /** One simulation step in wall-clock milliseconds. */
 export const STEP_MS = 1000 / STEPS_PER_SECOND;
-/** A single frame never advances the simulation by more than this (ADR-0002). */
-export const MAX_FRAME_MS = 250;
+/** A single frame never advances the simulation by more than this (copied from retro-shmup, ADR-0002). */
+const MAX_FRAME_MS = 250;
 
 // Tolerance for the floating-point remainder of repeated 1000 / 60 subtractions.
 const EPSILON_MS = 1e-6;
