@@ -196,8 +196,11 @@ export class Simulation {
       if (offset === undefined) continue;
       this.setProbe(to, this.active.x + offset.x, this.active.y + offset.y);
       if (!this.board.fits(this.probe)) continue;
+      const descended = this.probe.y < this.active.y;
       this.moveTo(this.probe);
       this.lastRotationKick = i;
+      // A downward kick can reach a new lowest row: that restores the resets (GDD §3).
+      if (descended) this.lockDelay.onDescend(this.active.y);
       this.lockDelay.onMoveOrRotate(this.isGrounded());
       return;
     }
