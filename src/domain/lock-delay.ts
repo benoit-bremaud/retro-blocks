@@ -16,19 +16,22 @@ export class LockDelay {
     this.lowestY = spawnY;
   }
 
-  /** Counts one step; true when the piece must lock now. In the air the countdown stays at zero. */
+  /** Counts one step; true when the piece must lock now (30 grounded frames). In the air the countdown stays at zero. */
   tick(grounded: boolean): boolean {
     if (!grounded) {
       this.frames = 0;
       return false;
     }
     this.frames += 1;
-    return this.frames >= MAX_FRAMES || this.resets >= MAX_RESETS;
+    return this.frames >= MAX_FRAMES;
   }
 
-  /** Call after a successful move or rotation: when grounded, restarts the countdown and spends a reset. */
+  /**
+   * Call after a successful move or rotation: when grounded, restarts the countdown and spends a
+   * reset. Once 15 are spent, moves no longer restart it and the countdown runs out.
+   */
   onMoveOrRotate(grounded: boolean): void {
-    if (!grounded) return;
+    if (!grounded || this.resets >= MAX_RESETS) return;
     this.frames = 0;
     this.resets += 1;
   }

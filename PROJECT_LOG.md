@@ -26,3 +26,9 @@
 - MCDA: `Prng.nextInt(max)` as in the UML (465/500); `Board.lock` returns full rows and a new `clearRows` removes them after the clear delay (440/500 vs 330 for clearing inside `lock`). UML updated accordingly.
 - Gotchas: `!` is lint-banned and `noUncheckedIndexedAccess` is on, so shapes are 4-tuples destructured in the board (no dead guards, no loops); parameter properties are rejected by `erasableSyntaxOnly`.
 - review-local: 3 Must + 7 Should fixed (per-frame allocation removed with reused buffers, `lock` precondition, golden kick/PRNG tables). Gate green: 78 tests, 90.7 % branches, docs 100 %, Sonar PASSED.
+
+## 2026-10-19 — Brick 4: Domain II (branch `feat/game`)
+- AutoShift (DAS 10 / ARR 2), LockDelay (30 frames, 15 resets, lowest-row rule), Gravity (Guideline curve as integer sub-cells, levels 1–15), Scoring (GDD §4), IntentFrame, and Simulation (hold → rotate → shift → drop → gravity → lock, 20-step Clearing, T-spin via `lastRotationKick`, block/lock out). Test-first; reused `StepOutcome` / `SimView`, no allocation in the step path.
+- MCDA (owner-validated): gravity table = precomputed Guideline curve (455/500 vs NES frames 380, runtime `Math.pow` 340); `SimView` = reused object with a read-only `BoardView` (445/500 vs copied cells 415, getters 335); after review: 15 resets then the countdown runs out (440/500 vs lock on 16th move 385, status quo 365), input ignored during Clearing (410/500, revisit at the brick 5 tuning), combo literal from the GDD (430/500).
+- review-local: 4 Must (test gaps) fixed, 6 Should fixed (UML drift, read-only score, doc contracts). Sonar S3358 / S7735 fixed. Gate: 176 tests, 94.2 % branches, docs 100 %, Sonar PASSED.
+- Open Nice: `detectSpin` as a pure function, `lowestY` tracks the box row, `startLevel` validation, configurable DAS/ARR, `Bag7.fill` spread allocation.

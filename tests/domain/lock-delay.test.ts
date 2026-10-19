@@ -46,21 +46,25 @@ describe('LockDelay', () => {
     expect(lock.tick(true)).toBe(false);
   });
 
-  it('locks as soon as 15 resets are spent, even with frames left', () => {
-    const lock = new LockDelay();
-    lock.reset(21);
-    for (let i = 0; i < 14; i += 1) lock.onMoveOrRotate(true);
-    expect(lock.tick(true)).toBe(false);
-    lock.onMoveOrRotate(true);
-    expect(lock.tick(true)).toBe(true);
-  });
-
-  it('a new lowest row restores the frames and the resets', () => {
+  it('stops restarting the countdown once 15 resets are spent', () => {
     const lock = new LockDelay();
     lock.reset(21);
     for (let i = 0; i < 15; i += 1) lock.onMoveOrRotate(true);
+    expect(tickMany(lock, true, 10).includes(true)).toBe(false);
+    lock.onMoveOrRotate(true);
+    expect(tickMany(lock, true, 19).includes(true)).toBe(false);
+    expect(lock.tick(true)).toBe(true);
+  });
+
+  it('a new lowest row restores the resets as well as the frames', () => {
+    const lock = new LockDelay();
+    lock.reset(21);
+    for (let i = 0; i < 15; i += 1) lock.onMoveOrRotate(true);
+    tickMany(lock, true, 25);
     lock.onDescend(20);
-    expect(lock.tick(true)).toBe(false);
+    lock.onMoveOrRotate(true);
+    expect(tickMany(lock, true, 29).includes(true)).toBe(false);
+    expect(lock.tick(true)).toBe(true);
   });
 
   it('a new lowest row also restores the frames', () => {
@@ -77,20 +81,22 @@ describe('LockDelay', () => {
     lock.reset(21);
     lock.onDescend(10);
     for (let i = 0; i < 15; i += 1) lock.onMoveOrRotate(true);
+    tickMany(lock, true, 25);
     lock.onDescend(12);
+    lock.onMoveOrRotate(true);
+    expect(tickMany(lock, true, 4).includes(true)).toBe(false);
     expect(lock.tick(true)).toBe(true);
   });
 
-  it('reset starts a new piece from scratch', () => {
+  it('reset starts a new piece from scratch, forgetting the old lowest row', () => {
     const lock = new LockDelay();
     lock.reset(21);
-    for (let i = 0; i < 15; i += 1) lock.onMoveOrRotate(true);
     lock.onDescend(5);
     lock.reset(21);
     lock.onDescend(10);
-    for (let i = 0; i < 15; i += 1) lock.onMoveOrRotate(true);
-    // 10 is a new lowest row only because reset forgot the old lowest row (5): resets are back.
+    tickMany(lock, true, 20);
+    // 9 is a new lowest row only if reset forgot the old one (5): the frames restart.
     lock.onDescend(9);
-    expect(lock.tick(true)).toBe(false);
+    expect(tickMany(lock, true, 29).includes(true)).toBe(false);
   });
 });

@@ -17,7 +17,7 @@ Single-player falling-block puzzle. Stack seven tetrominoes, clear lines, surviv
 | Next queue | 5 previews |
 | Ghost piece | Shown at `Board.dropDistance`, toggleable |
 | Gravity | Level-based table; soft drop ×20 of current gravity; hard drop instant lock |
-| Lock delay | 30 frames (0.5 s at 60 Hz), reset on successful move/rotate, max 15 resets per piece |
+| Lock delay | 30 frames (0.5 s at 60 Hz), reset on successful move/rotate, max 15 resets per lowest row (after the 15th, the countdown runs out) |
 | Spawn | Piece occupies rows 20–21, centred. Block out: spawn does not fit. Lock out: a piece locks with every cell at y ≥ 20 |
 | Line clear | 1–4 rows simultaneously, rows above fall; 20-step clear delay counted by the simulation, then the next piece spawns |
 
@@ -35,6 +35,7 @@ All values × level, using the level **before** any level-up caused by this clea
 - Back-to-back ×1.5 on a four-line or a T-spin clear that follows another one. A Single, Double or
   Triple without a spin breaks the chain; a spin with no lines does not.
 - A lock with no line clear resets the combo.
+- Combo: the 1st clearing lock scores no bonus, the 2nd also none (combo 0), the 3rd +50 × level, then +50 more per extra consecutive clearing lock.
 
 ## 5. Levels
 Start level 1; +1 level per 10 lines. Gravity table defined as data (cells/frame at 60 Hz), capped at level 15+.

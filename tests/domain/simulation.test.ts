@@ -219,17 +219,18 @@ describe('Simulation: lock delay', () => {
     expect(sim.step(IDLE).locked).toBe(true);
   });
 
-  it('locks once 15 resets are spent', () => {
+  it('stops restarting the countdown after 15 resets', () => {
     const sim = new Simulation(identityPrng(), 1);
     landed(sim);
+    let steps = 0;
     let locked = false;
-    let moves = 0;
     while (!locked) {
-      locked = sim.step(press(moves % 2 === 0 ? Intent.Left : Intent.Right)).locked;
-      moves += 1;
+      locked = sim.step(press(steps % 2 === 0 ? Intent.Left : Intent.Right)).locked;
+      steps += 1;
     }
-    // Sitting on the floor, every grounded move spends one reset: the piece locks as the 15th is spent.
-    expect(moves).toBe(15);
+    // 15 grounded moves each restart the countdown; the 30th grounded frame after the last
+    // restart (the move's own step counts as the first) locks the piece.
+    expect(steps).toBe(15 + 29);
   });
 });
 

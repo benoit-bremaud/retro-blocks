@@ -168,8 +168,9 @@ classDiagram
 - **Gravity:** integer fixed point, 256 sub-cells per cell; precomputed Guideline curve for levels 1–15, held at level 15 beyond. Soft drop multiplies the level value by
   20 at the call site and scores 1 point per cell descended.
 - **Lock delay:** `onMoveOrRotate` is called only after a *successful* move or rotation, and counts
-  only when grounded. `onDescend(y)` resets frames and resets when y is a new lowest row.
-  `tick` returns true when grounded and (frames ≥ 30 or resets ≥ 15).
+  only when grounded, and restarts the countdown for the first 15 times only; after that the
+  countdown runs out. `onDescend(y)` resets frames and resets when y is a new lowest row.
+  `tick` returns true when grounded and frames ≥ 30.
 - **Hold:** `tryHold()` does nothing when `holdUsed`; otherwise swaps with `held` (empty → take
   `bag.next()`), respawns and sets `holdUsed`, cleared when the next piece locks.
 - **T-spin:** T only. `lastRotationKick` is −1 (none), or 0 (no offset) … 4 (last SRS test), set by a successful
