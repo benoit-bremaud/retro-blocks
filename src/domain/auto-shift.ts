@@ -25,7 +25,7 @@ export class AutoShift {
     }
     if (!this.isHeld(left, right)) {
       // Resume the other held direction with a fresh charge, no initial move.
-      this.direction = left === right ? 0 : left ? -1 : 1;
+      this.direction = Number(right) - Number(left);
       this.frames = 0;
       return 0;
     }

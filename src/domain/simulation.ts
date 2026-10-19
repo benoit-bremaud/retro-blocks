@@ -173,8 +173,8 @@ export class Simulation {
     if ((pressed & Intent.RotateCcw) !== 0) this.tryRotate(false);
     const dx = this.shift.step(held, pressed);
     if (dx !== 0) this.tryShift(dx);
-    if ((pressed & Intent.HardDrop) !== 0) this.hardDrop();
-    else this.fall((held & Intent.SoftDrop) !== 0);
+    if ((pressed & Intent.HardDrop) === 0) this.fall((held & Intent.SoftDrop) !== 0);
+    else this.hardDrop();
   }
 
   private tryHold(): void {
