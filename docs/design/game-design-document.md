@@ -53,5 +53,5 @@ Local storage only: hall of fame (top 10), settings. No backend (as retro-shmup 
 Multiplayer, online ranking, garbage lines.
 
 ## 10. Open questions
-- Exact gravity table values (to tune in the vertical slice).
+- Gravity table: Guideline curve fixed in brick 4 (levels 1–15); tune in the vertical slice if it feels off.
 - Touch control scheme.

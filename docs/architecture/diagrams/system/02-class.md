@@ -43,7 +43,7 @@ classDiagram
     -clearFrames: int
     -gravitySub: int
     -lastRotationKick: int?
-    +constructor(rng: Prng, startLevel: int)
+    +constructor(rng: Prng, startLevel: int, board: Board)
     +step(intent: IntentFrame) StepOutcome
     +view() SimView
     -tryHold()
@@ -129,7 +129,7 @@ classDiagram
     +level: int
     +lines: int
     +points: int
-    -combo: int
+    -combo: int  "consecutive clearing locks"
     -backToBack: bool
     +award(rows: int, spin: SpinKind)
     +addDrop(cells: int, hard: bool)
@@ -150,6 +150,8 @@ classDiagram
 
 ## Rules carried by the model
 
+- **Construction:** `board` defaults to an empty `Board`; tests pass a prepared one. `StepOutcome` and `SimView` are reused objects: read them before the next `step` / `view`.
+- **Combo:** `combo` counts consecutive clearing locks; the bonus is 50 × (combo − 2) × level, so it starts at 0 on the 2nd.
 - **Input:** `IntentFrame` bit flags (Left, Right, SoftDrop, HardDrop, RotateCw, RotateCcw, Hold,
   Pause), `held` and `pressed` as in retro-shmup's input port. Rotate, hard drop and hold fire on
   `pressed` only. `AutoShift` returns −1, 0 or +1 cells for this step (DAS 10, ARR 2).
@@ -166,7 +168,7 @@ classDiagram
 - **Spawn:** `spawnPiece(kind)` puts the box at x = 3, y = 19: every piece lies within rows 20–21 (I only on row 21), centred.
 - **Top-out:** block out = the spawned piece does not fit; lock out = `isLockOut()` (every cell at
   y ≥ 20).
-- **Gravity:** integer fixed point, 256 sub-cells per cell. Soft drop multiplies the level value by
+- **Gravity:** integer fixed point, 256 sub-cells per cell; precomputed Guideline curve for levels 1–15, held at level 15 beyond. Soft drop multiplies the level value by
   20 at the call site and scores 1 point per cell descended.
 - **Lock delay:** `onMoveOrRotate` is called only after a *successful* move or rotation, and counts
   only when grounded. `onDescend(y)` resets frames and resets when y is a new lowest row.
