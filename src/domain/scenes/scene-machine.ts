@@ -1,70 +1,49 @@
-import { Simulation } from '../simulation';
 import type { AudioPort } from '../ports/audio-port';
 import type { FrameTarget } from '../ports/frame-target';
-import { Intent, type IntentFrame } from '../ports/input-port';
+import type { IntentFrame } from '../ports/input-port';
 import type { RenderPort } from '../ports/render-port';
-import { SeededPrng } from '../random/seeded-prng';
-import { RunPresenter, type SceneKind } from '../presentation/run-presenter';
-
-const START_LEVEL = 1;
+import type { SavePort } from '../ports/save-port';
+import { HallOfFameScene } from './hall-of-fame-scene';
+import { MenuScene } from './menu-scene';
+import { NameEntryScene } from './name-entry-scene';
+import { RunScene } from './run-scene';
+import { SceneContext, type Scene, type SceneId } from './scene';
+import { SettingsScene } from './settings-scene';
 
 /**
- * The scenes of a run (UML gameplay/02-state, brick 5 subset): Run, Paused and GameOver. A new
- * `Simulation` is created per run and per retry with a fresh seed from the injected source. While
- * Paused or after the game is over the simulation is not stepped, and the frame still renders.
+ * Owns the screens (UML gameplay/02-state, system/04-class-brick6) and delegates each step and
+ * frame to the current one; a scene that returns another id is left and the target is entered.
+ * The seed of each run comes from the injected source.
  */
 export class SceneMachine implements FrameTarget {
-  private readonly presenter = new RunPresenter();
-  private readonly newSeed: () => number;
-  private readonly port: RenderPort;
-  private readonly audio: AudioPort;
-  private sim: Simulation;
-  private scene: SceneKind = 'Run';
+  private readonly scenes: Readonly<Record<SceneId, Scene>>;
+  private id: SceneId = 'Menu';
 
-  constructor(newSeed: () => number, port: RenderPort, audio: AudioPort) {
-    this.newSeed = newSeed;
-    this.port = port;
-    this.audio = audio;
-    this.sim = this.startRun();
+  /** Loads settings and scores through `save` and applies the saved volume to `audio` before the first frame. */
+  constructor(newSeed: () => number, port: RenderPort, audio: AudioPort, save: SavePort) {
+    const context = new SceneContext(save, audio);
+    this.scenes = {
+      Menu: new MenuScene(context, port),
+      Settings: new SettingsScene(context, port),
+      HallOfFame: new HallOfFameScene(context, port),
+      NameEntry: new NameEntryScene(context, port),
+      Run: new RunScene(newSeed, context, port, audio),
+    };
   }
 
-  /** The scene being played; read by tests. */
-  get current(): SceneKind {
-    return this.scene;
+  /** The screen being shown; read by tests. */
+  get current(): SceneId {
+    return this.id;
   }
 
   step(frame: IntentFrame): void {
-    switch (this.scene) {
-      case 'Run':
-        this.stepRun(frame);
-        break;
-      case 'Paused':
-        if ((frame.pressed & Intent.Pause) !== 0) this.scene = 'Run';
-        break;
-      case 'GameOver':
-        if ((frame.pressed & Intent.Confirm) !== 0) {
-          this.sim = this.startRun();
-          this.scene = 'Run';
-        }
-        break;
-    }
+    const next = this.scenes[this.id].step(frame);
+    if (next === null) return;
+    this.id = next;
+    this.scenes[next].enter();
   }
 
   render(): void {
-    this.presenter.draw(this.sim.view(), this.scene, this.port);
-  }
-
-  private stepRun(frame: IntentFrame): void {
-    if ((frame.pressed & Intent.Pause) !== 0) {
-      this.scene = 'Paused';
-      return;
-    }
-    const outcome = this.sim.step(frame);
-    this.presenter.announce(outcome, this.audio);
-    if (outcome.toppedOut) this.scene = 'GameOver';
-  }
-
-  private startRun(): Simulation {
-    return new Simulation(new SeededPrng(this.newSeed()), START_LEVEL);
+    this.scenes[this.id].render();
   }
 }

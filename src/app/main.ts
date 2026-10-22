@@ -1,7 +1,8 @@
+import { AudioSynth, WebAudioTones } from '../adapters/audio-synth';
 import { CanvasRenderer } from '../adapters/canvas-renderer';
 import { KeyboardInput } from '../adapters/keyboard-input';
+import { LocalStorageSave, type KeyValueStore } from '../adapters/local-storage-save';
 import { PerformanceClock } from '../adapters/performance-clock';
-import { SILENT_AUDIO } from '../domain/ports/audio-port';
 import { SCREEN_HEIGHT, SCREEN_WIDTH } from '../domain/presentation/layout';
 import { SceneMachine } from '../domain/scenes/scene-machine';
 import { FrameLoop } from './frame-loop';
@@ -34,8 +35,14 @@ function fitCanvas(): void {
 fitCanvas();
 globalThis.addEventListener('resize', fitCanvas);
 
+const audio = new AudioSynth(() =>
+  typeof AudioContext === 'undefined' ? null : new WebAudioTones(new AudioContext()),
+);
+
 const input = new KeyboardInput();
 globalThis.addEventListener('keydown', (event) => {
+  // Browsers (Safari above all) start audio only inside a user gesture, so unlock it here.
+  audio.unlock();
   if (input.keyDown(event.code, event.repeat, event.metaKey)) event.preventDefault();
 });
 globalThis.addEventListener('keyup', (event) => {
@@ -45,10 +52,29 @@ globalThis.addEventListener('blur', () => {
   input.releaseAll();
 });
 
-// Gameplay seed (UML system/01-component): one fresh seed per run, recorded with the score in brick 6.
+// Gameplay seed (UML system/01-component): one fresh seed per run, recorded with the score in the hall of fame.
 const newSeed = (): number => crypto.getRandomValues(new Uint32Array(1))[0] ?? 0;
 
-const scenes = new SceneMachine(newSeed, renderer, SILENT_AUDIO);
+/** `localStorage`, or a throwaway in-memory store when the browser denies access (private mode, blocked site data). */
+function openStore(): KeyValueStore {
+  try {
+    return globalThis.localStorage;
+  } catch {
+    const memory = new Map<string, string>();
+    return {
+      getItem: (key) => memory.get(key) ?? null,
+      setItem: (key, value) => {
+        memory.set(key, value);
+      },
+    };
+  }
+}
+
+const save = new LocalStorageSave(
+  openStore(),
+  globalThis.navigator.language.toLowerCase().startsWith('fr') ? 'fr' : 'en',
+);
+const scenes = new SceneMachine(newSeed, renderer, audio, save);
 new FrameLoop(new PerformanceClock(), input, scenes, (callback) => {
   globalThis.requestAnimationFrame(callback);
 }).start();

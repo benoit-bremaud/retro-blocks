@@ -81,6 +81,14 @@ test('boots, plays a drop, pauses, tops out and restarts', async ({ page }) => {
     expect(await lockedCells(page)).toBe(0);
   });
 
+  await test.step('the menu starts a run on Enter', async () => {
+    const menu = await bottomRow(page);
+    await tap(page, 'Enter');
+    // The menu has no playfield: the floor row now shows the field background, a different colour.
+    await expect.poll(() => bottomRow(page)).not.toEqual(menu);
+    expect(await lockedCells(page)).toBe(0);
+  });
+
   let before: number[][] = [];
   await test.step('a hard drop locks the first piece on the floor', async () => {
     await tap(page, 'Space');
@@ -96,13 +104,20 @@ test('boots, plays a drop, pauses, tops out and restarts', async ({ page }) => {
     await expect.poll(() => bottomRow(page)).toEqual(before);
   });
 
-  await test.step('a stack to the ceiling ends the run, and Enter starts a new one', async () => {
+  await test.step('a stack to the ceiling ends the run: name entry, hall of fame, menu, new run', async () => {
     // Pieces dropped at the spawn column pile up without ever completing a row.
     for (let i = 0; i < 30; i += 1) await tap(page, 'Space');
-    // The game over overlay dims the stack, so the floor row no longer shows its first colours.
+    // The run scored points on an empty table, so the name entry replaces the field.
     await expect.poll(() => bottomRow(page)).not.toEqual(before);
+    for (let i = 0; i < 3; i += 1) await tap(page, 'Enter');
+    await tap(page, 'Enter');
     await tap(page, 'Enter');
     await expect.poll(() => lockedCells(page)).toBe(0);
+  });
+
+  await test.step('the score survives a reload', async () => {
+    const saved = await page.evaluate(() => localStorage.getItem('retro-blocks.v1.scores'));
+    expect(saved).toContain('AAA');
   });
 
   expect(errors).toEqual([]);

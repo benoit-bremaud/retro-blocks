@@ -73,6 +73,11 @@ flowchart TB
 
 - `FrameTarget` (the loop's only view of the game) is a domain port, so `SceneMachine` implements it without importing `app/`.
 - `SavePort` and its adapter stay in the diagram but are built in brick 6 (hall of fame): nothing persists in brick 5.
-- `AudioPort` ships with a silent default (`SILENT_AUDIO`); `AudioSynth` is built in brick 6.
+- `AudioPort` ships with a silent default in brick 5 (removed in brick 6); `AudioSynth` is built in brick 6.
 - Lint rule added: an adapter imports only `domain/ports/**` (never another domain module) and never `app/`. The `Intent` flags and `IntentFrame` therefore move to `domain/ports/input-port.ts`.
 - `Viewport` (integer scale from the window size) lives in `app/` and feeds the renderer; `main.ts` calls it on `resize`.
+
+## Brick 6 deltas
+
+- `SavePort` (`LocalStorageSave`) and `AudioSynth` are built; `main.ts` wires them. Details and the scene split: system/04-class-brick6.
+- `AudioPort` gains `setVolume`; `SILENT_AUDIO` is removed (tests use a recording fake).

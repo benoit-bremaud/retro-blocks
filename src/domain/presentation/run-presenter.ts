@@ -1,5 +1,6 @@
 import type { AudioPort, SfxId } from '../ports/audio-port';
-import { FONT, type RenderPort } from '../ports/render-port';
+import type { MessageSet } from '../i18n/messages';
+import type { RenderPort } from '../ports/render-port';
 import { BOARD_WIDTH } from '../board-size';
 import { cellCode, type PieceKind } from '../piece-kind';
 import { shape } from '../srs';
@@ -15,6 +16,7 @@ import {
   rowTop,
 } from './layout';
 import { Palette } from './palette';
+import { textWidth } from './text-layout';
 
 /** Which scene is drawn; the scene machine owns the transitions (UML gameplay/02-state). */
 export type SceneKind = 'Run' | 'Paused' | 'GameOver';
@@ -56,11 +58,6 @@ function boundsOf(kind: PieceKind): Bounds {
   return { minX, minY, width: Math.max(...xs) - minX + 1, height: Math.max(...ys) - minY + 1 };
 }
 
-/** Pixel width of `text` in the bitmap font at `scale`. */
-function textWidth(text: string, scale: number): number {
-  return text.length * (FONT.glyphWidth + FONT.advance) * scale - FONT.advance * scale;
-}
-
 /**
  * Turns a `SimView` into draw calls and a `StepOutcome` into sounds (UML system/03-class-engine).
  * Draw calls allocate nothing: index loops, and the numbers of the panel are converted to text
@@ -87,12 +84,12 @@ export class RunPresenter {
   }
 
   /** Draws the whole logical screen. While Clearing, `active` is already part of the cells: it is not drawn again. */
-  draw(view: SimView, scene: SceneKind, port: RenderPort): void {
+  draw(view: SimView, scene: SceneKind, port: RenderPort, text: MessageSet): void {
     port.clear(Palette.background);
     this.drawField(view, port);
-    this.drawPanels(view, port);
-    if (scene === 'Paused') drawOverlay(port, 'PAUSED', 'PRESS P');
-    else if (scene === 'GameOver') drawOverlay(port, 'GAME OVER', 'PRESS ENTER');
+    this.drawPanels(view, port, text);
+    if (scene === 'Paused') drawOverlay(port, text.paused, text.pressP);
+    else if (scene === 'GameOver') drawOverlay(port, text.gameOver, text.pressEnter, text.escMenu);
   }
 
   private drawField(view: SimView, port: RenderPort): void {
@@ -142,18 +139,18 @@ export class RunPresenter {
     }
   }
 
-  private drawPanels(view: SimView, port: RenderPort): void {
+  private drawPanels(view: SimView, port: RenderPort, text: MessageSet): void {
     this.refreshText(view);
-    port.drawText('HOLD', LEFT_PANEL_X, 40, 2, Palette.text);
+    port.drawText(text.hold, LEFT_PANEL_X, 40, 2, Palette.text);
     port.fillRect(LEFT_PANEL_X, HOLD_TOP, BOX_WIDTH + 16, PREVIEW_SLOT, Palette.panel);
     if (view.held !== null) drawPreview(port, view.held, LEFT_PANEL_X + 8, HOLD_TOP + 4);
-    port.drawText('SCORE', LEFT_PANEL_X, 144, 1, Palette.textDim);
+    port.drawText(text.score, LEFT_PANEL_X, 144, 1, Palette.textDim);
     port.drawText(this.pointsText, LEFT_PANEL_X, 154, 2, Palette.text);
-    port.drawText('LEVEL', LEFT_PANEL_X, 186, 1, Palette.textDim);
+    port.drawText(text.level, LEFT_PANEL_X, 186, 1, Palette.textDim);
     port.drawText(this.levelText, LEFT_PANEL_X, 196, 2, Palette.text);
-    port.drawText('LINES', LEFT_PANEL_X, 228, 1, Palette.textDim);
+    port.drawText(text.lines, LEFT_PANEL_X, 228, 1, Palette.textDim);
     port.drawText(this.linesText, LEFT_PANEL_X, 238, 2, Palette.text);
-    port.drawText('NEXT', RIGHT_PANEL_X, 40, 2, Palette.text);
+    port.drawText(text.next, RIGHT_PANEL_X, 40, 2, Palette.text);
     for (let i = 0; i < view.next.length; i += 1) {
       const kind = view.next[i];
       const top = NEXT_TOP + i * PREVIEW_SLOT;
@@ -203,7 +200,7 @@ function drawPreview(port: RenderPort, kind: PieceKind, x: number, y: number): v
   }
 }
 
-function drawOverlay(port: RenderPort, title: string, hint: string): void {
+function drawOverlay(port: RenderPort, title: string, hint: string, extra = ''): void {
   port.fillRect(FIELD_X, FIELD_Y, FIELD_WIDTH, FIELD_HEIGHT, Palette.overlay);
   const centre = FIELD_X + FIELD_WIDTH / 2;
   port.drawText(
@@ -220,4 +217,13 @@ function drawOverlay(port: RenderPort, title: string, hint: string): void {
     1,
     Palette.textDim,
   );
+  if (extra !== '') {
+    port.drawText(
+      extra,
+      centre - textWidth(extra, 1) / 2,
+      FIELD_Y + FIELD_HEIGHT / 2 + 20,
+      1,
+      Palette.textDim,
+    );
+  }
 }
