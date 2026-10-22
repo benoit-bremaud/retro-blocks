@@ -19,6 +19,7 @@ export class SceneMachine implements FrameTarget {
   private readonly scenes: Readonly<Record<SceneId, Scene>>;
   private id: SceneId = 'Menu';
 
+  /** Loads settings and scores through `save` and applies the saved volume to `audio` before the first frame. */
   constructor(newSeed: () => number, port: RenderPort, audio: AudioPort, save: SavePort) {
     const context = new SceneContext(save, audio);
     this.scenes = {

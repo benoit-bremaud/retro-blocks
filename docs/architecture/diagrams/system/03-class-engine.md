@@ -1,4 +1,4 @@
-# Engine, presentation and adapter classes (brick 5)
+# Engine, presentation and adapter classes (brick 5; scenes and audio extended by brick 6, see 04-class-brick6)
 
 Ports live in `src/domain/ports/`; presentation logic in `src/domain/presentation/` and
 `src/domain/scenes/` (browser-free, tested with a fake `RenderPort`); adapters in `src/adapters/`
@@ -90,6 +90,6 @@ The canvas is scaled by an integer factor (nearest neighbour, `computeViewport`:
 - **FrameLoop:** copied from retro-shmup (ADR-0002): accumulator starts half a step full, a frame advances at most 250 ms, a step that stops the loop ends the tick. The time scale and the dt argument are dropped (fixed steps only).
 - **SceneMachine (brick 5 subset):** Run → (pause) Paused → Run; Run → GameOver on `toppedOut`; GameOver → Run on Confirm with a new seed. While Paused, `step()` is not called on the `Simulation` and the frame still renders. The seed comes from an injected `() => number` (drawn in `main.ts`).
 - **RunPresenter:** draws only from `SimView`, no allocation in `draw` (index loops, reused scratch). `active` is not drawn while `phase` is Clearing. The ghost uses `ghostY` and is skipped when it equals `active.y`. During Clearing, `clearingRows` flash (alternating every 4 steps from `clearFrames`).
-- **Audio:** `announce` plays `lock`, `clear` (1 to 4 rows: `clear1`…), `spin`, `gameOver` through `AudioPort`; `main.ts` wires `SILENT_AUDIO` until brick 6.
+- **Audio:** `announce` plays `lock`, `clear` (1 to 4 rows: `clear1`…), `spin`, `gameOver` through `AudioPort`; brick 6 wires `AudioSynth`.
 - **Text:** the bitmap font is copied from retro-shmup and lives in the adapter; the port only takes strings (digits, A–Z, space, `-`); the presenter never passes another character.
 - **Key with Cmd held:** `KeyboardInput.keyDown(code, repeat, meta)` ignores it and releases every key, because macOS sends no `keyup` for a key pressed under Cmd.

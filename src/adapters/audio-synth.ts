@@ -69,6 +69,7 @@ export class AudioSynth implements AudioPort {
     this.create = create;
   }
 
+  /** Out-of-range levels are clamped to 0..`VOLUME_MAX`. */
   setVolume(level: number, muted: boolean): void {
     this.level = Math.min(VOLUME_MAX, Math.max(0, Math.trunc(level)));
     this.muted = muted;
@@ -105,6 +106,7 @@ export class AudioSynth implements AudioPort {
 /** The slice of `AudioContext` that `WebAudioTones` uses. */
 export interface ContextLike {
   readonly currentTime: number;
+  readonly state: string;
   readonly destination: object;
   resume(): Promise<void>;
   createOscillator(): {
@@ -133,7 +135,7 @@ export class WebAudioTones implements ToneOutput {
 
   tone(hz: number, delay: number, seconds: number, wave: Wave, gain: number): void {
     const { context } = this;
-    void context.resume();
+    if (context.state === 'suspended') context.resume().catch(() => undefined);
     const start = context.currentTime + delay;
     const end = start + seconds;
     const oscillator = context.createOscillator();

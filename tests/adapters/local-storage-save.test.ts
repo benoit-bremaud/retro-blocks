@@ -66,7 +66,7 @@ describe('LocalStorageSave', () => {
     );
     const scores = new LocalStorageSave(store, 'en').loadScores();
     expect(scores).toHaveLength(10);
-    expect(scores[0]?.points).toBe(10);
+    expect(scores[0]?.points).toBe(12);
     store.data.set('retro-blocks.v1.scores', '{"a":1}');
     expect(new LocalStorageSave(store, 'en').loadScores()).toEqual([]);
   });
@@ -95,7 +95,11 @@ describe('LocalStorageSave', () => {
     const save = new LocalStorageSave(store, 'en');
     expect(() => {
       save.saveScores([good]);
-      save.saveSettings(defaults as never);
+      save.saveSettings({ language: 'en', volume: 2, muted: false });
     }).not.toThrow();
+    expect(store.data.size).toBe(0);
+    store.failWrites = false;
+    save.saveScores([good]);
+    expect(save.loadScores()).toEqual([good]);
   });
 });

@@ -51,9 +51,12 @@ describe('AudioSynth', () => {
     const { audio, tones } = synth();
     audio.setVolume(99, false);
     audio.play('spin');
+    audio.setVolume(3, false);
+    audio.play('spin');
+    expect(tones.calls[0]?.gain).toBe(tones.calls[1]?.gain);
     audio.setVolume(-4, false);
     audio.play('spin');
-    expect(tones.calls).toHaveLength(1);
+    expect(tones.calls).toHaveLength(2);
   });
 
   it('creates the output once, on the first sound', () => {
@@ -95,6 +98,7 @@ describe('WebAudioTones', () => {
     const context: ContextLike = {
       currentTime: 10,
       destination: {},
+      state: 'suspended',
       resume: () => {
         log.push('resume');
         return Promise.resolve();

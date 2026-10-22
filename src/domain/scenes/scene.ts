@@ -1,5 +1,5 @@
 import type { AudioPort } from '../ports/audio-port';
-import type { IntentFrame } from '../ports/input-port';
+import { Intent, type IntentFrame } from '../ports/input-port';
 import type { SavePort, ScoreEntry, Settings } from '../ports/save-port';
 import { messages, type MessageSet } from '../i18n/messages';
 
@@ -54,4 +54,11 @@ export class SceneContext {
     this.scores = next;
     this.save.saveScores(next);
   }
+}
+
+/** Moves a cursor over `count` rows with the up and down intents, wrapping around. */
+export function moveCursor(cursor: number, frame: IntentFrame, count: number): number {
+  if ((frame.pressed & Intent.SoftDrop) !== 0) return (cursor + 1) % count;
+  if ((frame.pressed & Intent.RotateCw) !== 0) return (cursor + count - 1) % count;
+  return cursor;
 }

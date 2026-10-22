@@ -25,3 +25,6 @@ export function rowTop(y: number): number {
 
 /** Side of a preview cell (hold box, next queue). */
 export const MINI_CELL = 12;
+
+/** Top of the one-line hint at the bottom of the menu screens. */
+export const FOOTER_Y = 330;

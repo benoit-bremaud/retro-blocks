@@ -1,5 +1,6 @@
 import { Intent, type IntentFrame } from '../ports/input-port';
 import type { RenderPort } from '../ports/render-port';
+import { FOOTER_Y } from '../presentation/layout';
 import { Palette } from '../presentation/palette';
 import { drawCentred } from '../presentation/text-layout';
 import type { Scene, SceneContext, SceneId } from './scene';
@@ -28,7 +29,7 @@ export class HallOfFameScene implements Scene {
   }
 
   step(frame: IntentFrame): SceneId | null {
-    return (frame.pressed & (Intent.Confirm | Intent.Pause)) !== 0 ? 'Menu' : null;
+    return (frame.pressed & (Intent.Confirm | Intent.Pause)) === 0 ? null : 'Menu';
   }
 
   render(): void {
@@ -38,6 +39,6 @@ export class HallOfFameScene implements Scene {
     if (this.rows.length === 0) drawCentred(this.port, text.noScores, 150, 1, Palette.textDim);
     for (let i = 0; i < this.rows.length; i += 1)
       this.port.drawText(this.rows[i] ?? '', ROW_X, ROW_TOP + i * ROW_GAP, 2, Palette.text);
-    drawCentred(this.port, text.pressEnter, 330, 1, Palette.textDim);
+    drawCentred(this.port, text.pressEnter, FOOTER_Y, 1, Palette.textDim);
   }
 }

@@ -74,11 +74,12 @@ export class LocalStorageSave implements SavePort {
     const stored = readJson(this.store, SCORES_KEY);
     if (!Array.isArray(stored)) return [];
     const entries: ScoreEntry[] = [];
-    for (let i = 0; i < stored.length && entries.length < HALL_SIZE; i += 1) {
+    for (let i = 0; i < stored.length; i += 1) {
       const entry = toEntry(stored[i]);
       if (entry !== null) entries.push(entry);
     }
-    return entries.sort((a, b) => b.points - a.points);
+    entries.sort((a, b) => b.points - a.points);
+    return entries.slice(0, HALL_SIZE);
   }
 
   saveScores(entries: readonly ScoreEntry[]): void {

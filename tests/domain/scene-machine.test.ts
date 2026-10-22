@@ -83,6 +83,13 @@ describe('menu', () => {
     expect(scenes.current).toBe('Settings');
   });
 
+  it('wraps up from the first row to the last', () => {
+    const { scenes } = machine();
+    scenes.step(press(UP));
+    scenes.step(press(OK));
+    expect(scenes.current).toBe('Settings');
+  });
+
   it('ignores a frame with nothing pressed and highlights the selected row', () => {
     const { scenes, port } = machine();
     scenes.step(IDLE);
@@ -211,7 +218,7 @@ describe('name entry and hall of fame', () => {
     expect(scenes.current).toBe('HallOfFame');
     expect(save.scores).toHaveLength(1);
     expect(save.scores[0]?.name).toBe('BZC');
-    expect(save.scores[0]?.seed).toBeGreaterThan(0);
+    expect(save.scores[0]?.seed).toBe(1);
     expect(shows(' 1 BZC' + String(save.scores[0]?.points).padStart(9, ' '))).toBe(true);
   });
 
@@ -227,7 +234,7 @@ describe('name entry and hall of fame', () => {
     expect(shows('ZAB')).toBe(true);
     scenes.step(press(UP));
     scenes.step(press(UP));
-    expect(shows('ZAB')).toBe(false);
+    expect(shows('ZAD')).toBe(true);
   });
 
   it('skips on Esc without saving', () => {
@@ -235,6 +242,14 @@ describe('name entry and hall of fame', () => {
     scenes.step(press(Intent.Pause));
     expect(scenes.current).toBe('HallOfFame');
     expect(save.scoreWrites).toBe(0);
+  });
+
+  it('discards the score on Esc (skip is deliberate: arcade style)', () => {
+    const { scenes, save } = toNameEntry();
+    scenes.step(press(Intent.Pause));
+    scenes.step(press(Intent.Pause));
+    expect(scenes.current).toBe('Menu');
+    expect(save.scores).toEqual([]);
   });
 
   it('keeps ten lines, highest first, and leaves with Confirm or Esc', () => {

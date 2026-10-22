@@ -1,24 +1,20 @@
+import type { MessageSet } from '../i18n/messages';
 import { Intent, type IntentFrame } from '../ports/input-port';
 import type { RenderPort } from '../ports/render-port';
-import { SCREEN_HEIGHT } from '../presentation/layout';
+import { FOOTER_Y, SCREEN_WIDTH } from '../presentation/layout';
 import { Palette } from '../presentation/palette';
 import { drawCentred, textWidth } from '../presentation/text-layout';
-import type { Scene, SceneContext, SceneId } from './scene';
+import { moveCursor, type Scene, type SceneContext, type SceneId } from './scene';
 
 const TARGETS: readonly SceneId[] = ['Run', 'HallOfFame', 'Settings'];
 const ITEM_TOP = 150;
 const ITEM_GAP = 28;
 
-/** Moves a cursor over `count` rows with the up and down intents, wrapping around. */
-export function moveCursor(cursor: number, frame: IntentFrame, count: number): number {
-  if ((frame.pressed & Intent.SoftDrop) !== 0) return (cursor + 1) % count;
-  if ((frame.pressed & Intent.RotateCw) !== 0) return (cursor + count - 1) % count;
-  return cursor;
-}
-
 /** Title screen: START, HALL OF FAME, SETTINGS. */
 export class MenuScene implements Scene {
   private cursor = 0;
+  private labelsFor: MessageSet | null = null;
+  private labels: readonly string[] = [];
   private readonly context: SceneContext;
   private readonly port: RenderPort;
 
@@ -39,7 +35,7 @@ export class MenuScene implements Scene {
 
   render(): void {
     const { text } = this.context;
-    const labels = [text.start, text.scores, text.settings];
+    const labels = this.labelsOf(text);
     this.port.clear(Palette.background);
     drawCentred(this.port, text.title, 56, 4, Palette.text);
     for (let i = 0; i < labels.length; i += 1) {
@@ -48,10 +44,19 @@ export class MenuScene implements Scene {
       const selected = i === this.cursor;
       drawCentred(this.port, label, y, 2, selected ? Palette.text : Palette.textDim);
       if (selected) {
-        const x = 160 - textWidth(label, 2) / 2 - 14;
+        const x = SCREEN_WIDTH / 2 - textWidth(label, 2) / 2 - 14;
         this.port.fillRect(x, y + 2, 8, 8, Palette.flash);
       }
     }
-    drawCentred(this.port, text.navigate, SCREEN_HEIGHT - 20, 1, Palette.textDim);
+    drawCentred(this.port, text.navigate, FOOTER_Y, 1, Palette.textDim);
+  }
+
+  /** The three labels, rebuilt only when the language changes (render allocates nothing). */
+  private labelsOf(text: MessageSet): readonly string[] {
+    if (this.labelsFor !== text) {
+      this.labelsFor = text;
+      this.labels = [text.start, text.scores, text.settings];
+    }
+    return this.labels;
   }
 }

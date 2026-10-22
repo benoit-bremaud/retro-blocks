@@ -30,7 +30,8 @@ export class RunScene implements Scene {
     this.context = context;
     this.port = port;
     this.audio = audio;
-    this.sim = this.startRun();
+    // Placeholder until `enter` starts the first run, so the seed source is not drawn twice.
+    this.sim = new Simulation(new SeededPrng(0), START_LEVEL);
   }
 
   /** What the scene shows: playing, paused or the game over overlay; read by tests. */
@@ -52,7 +53,7 @@ export class RunScene implements Scene {
         return null;
       case 'GameOver':
         if ((frame.pressed & Intent.Confirm) !== 0) return 'Run';
-        return (frame.pressed & Intent.Pause) !== 0 ? 'Menu' : null;
+        return (frame.pressed & Intent.Pause) === 0 ? null : 'Menu';
     }
   }
 
