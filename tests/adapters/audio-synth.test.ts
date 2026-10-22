@@ -7,6 +7,12 @@ import {
 } from '../../src/adapters/audio-synth';
 
 class Tones implements ToneOutput {
+  unlocks = 0;
+
+  unlock(): void {
+    this.unlocks += 1;
+  }
+
   readonly calls: { hz: number; delay: number; gain: number }[] = [];
 
   tone(hz: number, delay: number, _seconds: number, _wave: string, gain: number): void {
@@ -84,6 +90,15 @@ describe('AudioSynth', () => {
     expect(() => {
       throwing.play('lock');
     }).not.toThrow();
+  });
+});
+
+describe('AudioSynth.unlock', () => {
+  it('creates the output and unlocks it inside the gesture, even before any sound', () => {
+    const { audio, tones, created } = synth();
+    audio.unlock();
+    expect(created()).toBe(1);
+    expect(tones.unlocks).toBe(1);
   });
 });
 

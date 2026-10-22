@@ -35,8 +35,14 @@ function fitCanvas(): void {
 fitCanvas();
 globalThis.addEventListener('resize', fitCanvas);
 
+const audio = new AudioSynth(() =>
+  typeof AudioContext === 'undefined' ? null : new WebAudioTones(new AudioContext()),
+);
+
 const input = new KeyboardInput();
 globalThis.addEventListener('keydown', (event) => {
+  // Browsers (Safari above all) start audio only inside a user gesture, so unlock it here.
+  audio.unlock();
   if (input.keyDown(event.code, event.repeat, event.metaKey)) event.preventDefault();
 });
 globalThis.addEventListener('keyup', (event) => {
@@ -68,10 +74,6 @@ const save = new LocalStorageSave(
   openStore(),
   globalThis.navigator.language.toLowerCase().startsWith('fr') ? 'fr' : 'en',
 );
-const audio = new AudioSynth(() =>
-  typeof AudioContext === 'undefined' ? null : new WebAudioTones(new AudioContext()),
-);
-
 const scenes = new SceneMachine(newSeed, renderer, audio, save);
 new FrameLoop(new PerformanceClock(), input, scenes, (callback) => {
   globalThis.requestAnimationFrame(callback);

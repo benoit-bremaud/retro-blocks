@@ -49,6 +49,8 @@ const GAIN: readonly number[] = [0, 0.04, 0.09, 0.16];
 
 /** Where tones are produced: the real one is the Web Audio API, a test passes a recorder. */
 export interface ToneOutput {
+  /** Resumes a suspended output; browsers allow it only inside a user gesture. */
+  unlock(): void;
   /** Plays one tone starting `delay` seconds from now, with a short fade-out. */
   tone(hz: number, delay: number, seconds: number, wave: Wave, gain: number): void;
 }
@@ -67,6 +69,11 @@ export class AudioSynth implements AudioPort {
 
   constructor(create: () => ToneOutput | null) {
     this.create = create;
+  }
+
+  /** Creates and unlocks the output; call it from a key handler, where the browser allows audio to start. */
+  unlock(): void {
+    this.ensureOutput()?.unlock();
   }
 
   /** Out-of-range levels are clamped to 0..`VOLUME_MAX`. */
@@ -133,9 +140,13 @@ export class WebAudioTones implements ToneOutput {
     this.context = context;
   }
 
+  unlock(): void {
+    if (this.context.state === 'suspended') this.context.resume().catch(() => undefined);
+  }
+
   tone(hz: number, delay: number, seconds: number, wave: Wave, gain: number): void {
     const { context } = this;
-    if (context.state === 'suspended') context.resume().catch(() => undefined);
+    this.unlock();
     const start = context.currentTime + delay;
     const end = start + seconds;
     const oscillator = context.createOscillator();
