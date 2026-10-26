@@ -50,3 +50,8 @@
 - `Scene` per screen (Menu, Settings, HallOfFame, NameEntry, Run) behind `SceneMachine`; `SavePort` + `LocalStorageSave` (validated, never throws, versioned keys); `HallOfFame` pure functions; EN/FR `MessageSet` in unaccented capitals; `AudioSynth` (WebAudio oscillators, no asset, lazy context, volume/mute).
 - Owner-validated MCDA: scene per screen 415/500 (vs switch 315); arcade 3-letter entry on existing intents 480 (vs typed text 300); EN/FR catalogue, font unchanged 445 (vs EN only 385, accented font 345); WebAudio synthesis 450 (vs samples 295).
 - Decisions in passing: a qualifying run goes straight to name entry; key remapping dropped from the brick; `HALL_SIZE` lives in the save port (adapters may import ports only); `SILENT_AUDIO` removed.
+
+## 2026-10-26 — Risk-based test plan and SonarQube gate back to green (PRs #26, #27)
+- PR #26 (`7bc783e`, closes #25): the new-code gate was red on `main` with 3 test-code violations (S5906 `toHaveLength` in `frame-loop.test.ts`, S5976 three scoring tests merged into one `it.each`); gate PASSED again.
+- PR #27 (`066b189`, closes #21): `docs/architecture/qa/test-plan.md`, first plan produced by `/test-plan` (pilot of claude-skills#75) — 8 risks, 12 families (9 apply), journeys JRN-01..03; gaps filed as #22 (E2E line clear, hall of fame, settings), #23 (axe-core), #24 (perf budget).
+- Codex finding on #27: the smoke never completes a row, so JRN-01's line clear moved into gap #22.
