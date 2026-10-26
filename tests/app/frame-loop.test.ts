@@ -90,9 +90,9 @@ describe('FrameLoop', () => {
     h.frame(STEP_MS);
     const before = h.steps.length;
     h.frame(-100);
-    expect(h.steps.length).toBe(before);
+    expect(h.steps).toHaveLength(before);
     h.frame(STEP_MS);
-    expect(h.steps.length).toBe(before + 1);
+    expect(h.steps).toHaveLength(before + 1);
   });
 
   it('does nothing after stop, and a second start does not double the chain', () => {

@@ -82,24 +82,16 @@ describe('Scoring', () => {
     expect(score.points).toBe(400 + 200 + 50 * 1 * 2);
   });
 
-  it('a lock without lines resets the combo', () => {
+  it.each([
+    ['a lock without lines resets the combo', [1, 1, 0], [1, 1], 200],
+    ['back-to-back: a second four-line clear is ×1.5', [4, 0], [4], 1200],
+    ['a single, double or triple without a spin breaks the chain', [4, 1, 0], [4], 800],
+  ])('%s', (_name, setup: number[], scored: number[], expected: number) => {
     const score = new Scoring(1);
-    score.award(1, 'None');
-    score.award(1, 'None');
-    score.award(0, 'None');
+    for (const rows of setup) score.award(rows, 'None');
     const before = score.points;
-    score.award(1, 'None');
-    score.award(1, 'None');
-    expect(score.points - before).toBe(200);
-  });
-
-  it('back-to-back: a second four-line clear is ×1.5', () => {
-    const score = new Scoring(1);
-    score.award(4, 'None');
-    score.award(0, 'None');
-    const before = score.points;
-    score.award(4, 'None');
-    expect(score.points - before).toBe(1200);
+    for (const rows of scored) score.award(rows, 'None');
+    expect(score.points - before).toBe(expected);
   });
 
   it('back-to-back applies to a T-spin clear after a four-line clear, not to the combo', () => {
@@ -111,16 +103,6 @@ describe('Scoring', () => {
     const mid = score.points;
     score.award(1, 'Full');
     expect(score.points - mid).toBe(1200 + 50 * 1);
-  });
-
-  it('a single, double or triple without a spin breaks the chain', () => {
-    const score = new Scoring(1);
-    score.award(4, 'None');
-    score.award(1, 'None');
-    score.award(0, 'None');
-    const before = score.points;
-    score.award(4, 'None');
-    expect(score.points - before).toBe(800);
   });
 
   it('a spin with no lines does not break the chain, and is not back-to-back itself', () => {
