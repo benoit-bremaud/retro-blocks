@@ -57,7 +57,7 @@
 
 | ID | Journey | Risks | Tool | Environment |
 |---|---|---|---|---|
-| JRN-01 | Boot → menu → play → clear lines → top out → restart | RSK-01, 05, 07 | Playwright (existing `first-playable.spec.ts`) | local, 3 engines |
+| JRN-01 | Boot → menu → play → clear lines → top out → restart | RSK-01, 05, 07 | Playwright — `first-playable.spec.ts` covers all but the line clear (#22) | local, 3 engines |
 | JRN-02 | Finish a run → enter a name → top 10 shows it after reload | RSK-02, 05 | Playwright | local, 3 engines |
 | JRN-03 | Change language, volume and mute → reload → settings kept | RSK-03, 05 | Playwright | local, 3 engines |
 
@@ -70,7 +70,7 @@
 
 | Family | Missing | Issue |
 |---|---|---|
-| Functional — E2E | JRN-02 and JRN-03 have no Playwright spec | #22 |
+| Functional — E2E | JRN-01 line clear, JRN-02 and JRN-03 have no Playwright spec | #22 |
 | UI — a11y automated | no axe-core run | #23 |
 | Performance | no frame / Lighthouse budget measured | #24 |
 | Static — mutation / property-based | catalogue-level gap | ~/.claude #78 |
