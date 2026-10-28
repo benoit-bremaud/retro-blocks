@@ -73,7 +73,7 @@
 | Functional — E2E | JRN-01 line clear, JRN-02 and JRN-03 have no Playwright spec | #22 |
 | UI — a11y automated | no axe-core run | #23 |
 | Performance | no frame / Lighthouse budget measured | #24 |
-| Static — mutation / property-based | catalogue-level gap | ~/.claude #78 |
+| Static — mutation / property-based | catalogue-level gap | benoit-bremaud/agents-skills#78 |
 
 ## Changelog
 
