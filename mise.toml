@@ -1,7 +1,7 @@
 # Local CI toolchain (#36, skill local-ci): every CLI the justfile tiers and the lefthook hooks
 # call, pinned; `mise.lock` pins the checksums. `just setup` installs it. System tools stay outside
 # mise: sonar-scanner (not in the mise registry, skill infra-accounts) and the Playwright browsers
-# (`pnpm exec playwright install chromium firefox webkit`, ADR-0003).
+# (`pnpm exec playwright install chromium firefox webkit`, brick 5).
 #
 # Node follows the .nvmrc major (mise.lock pins the exact build, the nightly drift check flags a
 # newer patch) and pnpm matches package.json#packageManager, so the hooks run the project's own

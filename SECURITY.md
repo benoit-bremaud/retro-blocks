@@ -32,8 +32,9 @@ disclosed through a GitHub security advisory once released.
   is no advisory mode for secrets.
 - **Static analysis and dependencies** — Semgrep Community Edition and `pnpm audit` (high and
   above) run before every push; no GitHub workflow runs, so there is no Action to pin.
-- **Attested merges** — `main` requires the `gate` status, written only by `just gate` together
-  with an SSH-signed note on the exact head SHA (`.github/allowed_signers`).
+- **Attested merges** — `main` requires the `gate` status; the control is the SSH-signed note on
+  the exact head SHA that `just gate` writes with it, verified by `just merge` against the
+  `.github/allowed_signers` of `origin/main` (ADR-0005).
 - **Dependency monitoring** — Dependabot alerts and update PRs are enabled for the repository.
 - **No backend, no personal data** — a static web page with no server, no account and no network
   call. Settings and the local hall of fame (planned) will stay in the browser's `localStorage`

@@ -18,8 +18,8 @@ set -e
 # A hook (pre-push runs `just check`) exports these; they would aim git at the outer repository.
 unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_PREFIX GIT_OBJECT_DIRECTORY GIT_COMMON_DIR
 # The gate of a branch that changes the local CI runs with GATE_CI_CHANGE=1; the guard cases
-# below must not inherit it.
-unset GATE_CI_CHANGE
+# below must not inherit it, nor the stub switches and Sonar settings of the caller's shell.
+unset GATE_CI_CHANGE SONAR_TOKEN SONAR_HOST_URL FAIL_STEP ATTEST_FAIL GH_FAIL MOVE_HEAD SCANNER_FAIL SONAR_DOWN MISE_OUT MISE_PATCH PR_HEAD PNPM_FAIL
 # The throwaway repositories must not inherit the machine's signing, hooks or URL rewrites.
 export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_SYSTEM=/dev/null
 
@@ -45,16 +45,9 @@ done
 deps() { just --show "$1" | grep -E "^$1( |:)" | sed 's/.*: *//'; } # deps <recipe>
 [ "$(deps check)" = "lint test security secrets" ] || fail "check must be exactly lint test security secrets"; ok
 deps nightly | grep -qw check || fail "nightly does not depend on check"; ok
-just --show smoke | grep -q 'pnpm test:smoke' || fail "smoke does not run the browser smoke test (ADR-0003)"; ok
-just --show test | grep -q 'scripts/doc-coverage.sh' || fail "test does not measure the doc coverage"; ok
+for s in doc-coverage test-local-ci test-attest; do just --show test | grep -q "scripts/$s.sh" || fail "test does not run scripts/$s.sh"; done; ok
+just --show nightly | grep -q 'scripts/toolchain-drift.sh' || fail "nightly does not check the toolchain drift"; ok
 [ -z "$(find .github -path '*/workflows/*' -name '*.y*ml' 2>/dev/null)" ] || fail "a GitHub workflow is left (ADR-0005: none)"; ok
-# The nightly TruffleHog exclude list: every rule is a valid regex, and the file excludes itself (its
-# own wording trips the URI detector once committed).
-just --show nightly | grep -q -- '--exclude-paths .trufflehog-exclude' || fail "nightly does not pass .trufflehog-exclude to trufflehog"; ok
-grep -v '^#' .trufflehog-exclude | grep -v '^$' | while IFS= read -r re; do
-  rc=0; printf '' | grep -Eq -- "$re" 2>/dev/null || rc=$?; [ "$rc" -le 1 ] || fail ".trufflehog-exclude: invalid regex: $re"
-done || exit 1; ok
-grep -qxF -- '^\.trufflehog-exclude$' .trufflehog-exclude || fail ".trufflehog-exclude does not exclude itself"; ok
 # The Node major and the pnpm version are each written in two places; they must agree.
 v=$(cat .nvmrc)
 grep -qE "^node = \"$v(\.|\")" mise.toml || fail "Node pin of mise.toml diverges from .nvmrc ($v)"; ok
@@ -96,7 +89,7 @@ box="$work/box"; mkdir -p "$box/origin" "$box/stub"
 git -C "$box/origin" init -q --bare -b main
 git clone -q "$box/origin" "$box/repo" 2> /dev/null; cd "$box/repo"
 git config user.email t@example.com && git config user.name t
-cp "$root/justfile" "$root/mise.toml" "$root/mise.lock" . && mkdir scripts src coverage
+cp "$root/justfile" "$root/mise.toml" "$root/mise.lock" "$root/.nvmrc" . && mkdir scripts src coverage
 printf '{"version":"0.0.0"}\n' > package.json
 cat > scripts/attest.sh <<'EOF2'
 #!/bin/sh
@@ -111,7 +104,7 @@ EOF2
 cat > "$box/stub/gh" <<'EOF2'
 #!/bin/sh
 echo "gh $*" >> "$LOG"; [ "${GH_FAIL:-}" != "$2" ] || exit 1
-case "$*" in "pr view"*) git rev-parse origin/main ;; esac # the PR head: a real, fetchable commit
+case "$*" in "pr view"*) git rev-parse "${PR_HEAD:-origin/main}" ;; esac # the PR head: a real, fetchable commit
 EOF2
 cat > "$box/stub/sonar-scanner" <<'EOF2'
 #!/bin/sh
@@ -119,7 +112,7 @@ echo "sonar-scanner $* token=${SONAR_TOKEN:-none}" >> "$LOG"; echo "sonar-scanne
 EOF2
 cat > "$box/stub/pnpm" <<'EOF2'
 #!/bin/sh
-echo "pnpm $*" >> "$LOG"
+echo "pnpm $*" >> "$LOG"; [ "${PNPM_FAIL:-0}" = 0 ]
 EOF2
 cat > "$box/stub/mise" <<'EOF2'
 #!/bin/sh
@@ -149,20 +142,32 @@ box_run 1 "gate: unpushed HEAD refused" "push HEAD first" -- "$real_just" gate m
 no_line '^just check' "gate ran check on an unpushed HEAD"
 git push -q origin main 2> /dev/null
 box_run 0 "gate: green path" "attest write gate" -- "$real_just" gate main
-[ "$(tr '\n' ' ' < "$LOG")" = "just check just sonar just smoke attest write gate $(git rev-parse HEAD) " ] || { cat "$LOG"; fail "gate steps or order, or the attested SHA is not the captured head: $(cat "$LOG")"; }; ok
+[ "$(tr '\n' ' ' < "$LOG")" = "pnpm install --frozen-lockfile just check just sonar just smoke attest write gate $(git rev-parse HEAD) " ] || { cat "$LOG"; fail "gate steps or order, or the attested SHA is not the captured head: $(cat "$LOG")"; }; ok
 box_run 1 "gate: failing smoke stops it" - -- env FAIL_STEP=smoke "$real_just" gate main
+grep -q '^just smoke' "$LOG" || fail "gate did not reach smoke"; ok
 no_line '^attest' "gate attested after a failed step"
+box_run 1 "gate: node_modules out of sync with the lockfile stops it" - -- env PNPM_FAIL=1 "$real_just" gate main
+no_line '^just check' "gate ran check on an out-of-sync node_modules"
 box_run 1 "gate: failing check stops it" - -- env FAIL_STEP=check "$real_just" gate main
-[ "$(tr '\n' ' ' < "$LOG")" = "just check " ] || { cat "$LOG"; fail "gate went past a failed check"; }; ok
+[ "$(tr '\n' ' ' < "$LOG")" = "pnpm install --frozen-lockfile just check " ] || { cat "$LOG"; fail "gate went past a failed check"; }; ok
 box_run 1 "gate: failing sonar stops it" - -- env FAIL_STEP=sonar "$real_just" gate main
+grep -q '^just sonar' "$LOG" || fail "gate did not reach sonar"; ok
 no_line '^just smoke' "gate ran smoke after a failed sonar"
 box_run 1 "gate: failed attestation propagates" - -- env ATTEST_FAIL=1 "$real_just" gate main
+grep -q '^attest write gate' "$LOG" || fail "gate did not reach the attestation"; ok
 box_run 0 "gate: default base" "attest write gate" -- "$real_just" gate
 echo '#!/bin/sh' > scripts/new.sh && git add scripts/new.sh && git commit -qm 'ci(repo): ci change' --no-verify && git push -q origin HEAD:ci 2> /dev/null
 box_run 1 "gate: a branch changing the local CI refused" "changes the local CI itself" -- "$real_just" gate origin/main
 no_line '^just check' "gate ran check on a branch changing the local CI"
 box_run 0 "gate: the same branch gated after reading" "attest write gate" -- env GATE_CI_CHANGE=1 "$real_just" gate origin/main
+box_run 1 "gate: GATE_CI_CHANGE other than 1 refused" "changes the local CI itself" -- env GATE_CI_CHANGE=true "$real_just" gate origin/main
 git reset -q --hard origin/main
+# Every guarded path trips the guard, the trust store first.
+for f in .github/allowed_signers justfile lefthook.yml mise.toml mise.lock .nvmrc pnpm-lock.yaml .npmrc .pnpmfile.cjs pnpm-workspace.yaml .semgrepignore tsconfig.app.json sonar-project.properties .gitleaks.toml; do
+  mkdir -p "$(dirname "$f")" && echo x >> "$f" && git add "$f" && git commit -qm "ci(repo): touch $f" --no-verify && git push -q origin HEAD:ci3 2> /dev/null
+  box_run 1 "gate: a branch changing $f refused" "$f" -- "$real_just" gate origin/main
+  git reset -q --hard origin/main && git -C "$box/origin" update-ref -d refs/heads/ci3
+done
 printf '{"version":"0.0.1"}\n' > package.json && git commit -qam 'chore(repo): scripts change' --no-verify && git push -q origin HEAD:ci2 2> /dev/null
 box_run 1 "gate: a branch changing package.json refused" "package.json" -- "$real_just" gate origin/main
 git reset -q --hard origin/main
@@ -178,15 +183,18 @@ box_run 1 "merge: non-numeric PR refused" "usage just merge" -- "$real_just" mer
 no_line '^gh' "merge called gh on a bad argument"
 box_run 1 "merge: unattested head refused" - -- env ATTEST_FAIL=1 "$real_just" merge 7
 no_line 'gh pr merge' "merge merged an unattested head"
-head=$(git rev-parse origin/main)
-box_run 0 "merge: attested head merged" "gh pr merge 7 --squash --match-head-commit $head" -- "$real_just" merge 7
+# The PR head differs from the checkout's HEAD: merge must take the SHA gh reports, never HEAD.
+head=$(git rev-parse origin/ahead)
+[ "$head" != "$(git rev-parse HEAD)" ] || fail "merge fixture: the PR head equals HEAD"; ok
+box_run 0 "merge: attested head merged" "gh pr merge 7 --squash --match-head-commit $head" -- env PR_HEAD=origin/ahead "$real_just" merge 7
 grep -q "^attest verify gate $head\$" "$LOG" || fail "merge did not verify the head SHA"; ok
 printf '#!/bin/sh\nexit 1\n' > scripts/attest.sh
-box_run 0 "merge: verifier of origin/main, not the checkout's" "gh pr merge 7" -- "$real_just" merge 7
+box_run 0 "merge: verifier of origin/main, not the checkout's" "gh pr merge 7" -- env PR_HEAD=origin/ahead "$real_just" merge 7
 git checkout -q scripts/attest.sh
 box_run 1 "merge: gh pr view failure propagates" - -- env GH_FAIL=view "$real_just" merge 7
 no_line 'gh pr merge' "merge merged after gh pr view failed"
 box_run 1 "merge: gh pr merge failure propagates" - -- env GH_FAIL=merge "$real_just" merge 7
+grep -q '^gh pr merge' "$LOG" || fail "merge did not reach gh pr merge"; ok
 
 # sonar: the five guards, then the call with the token in the environment and the gate wait.
 mkdir "$box/bare" && for b in sh git find cat node; do ln -s "$(command -v "$b")" "$box/bare/$b"; done

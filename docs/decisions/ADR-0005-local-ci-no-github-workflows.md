@@ -31,17 +31,21 @@ principle stands and is taken to its end: nothing runs on GitHub. Issue #36.
    |---|---|---|---|---|
    | L0 | `just fast` | lefthook `pre-commit` | gitleaks on the staged files, ESLint and Prettier on the staged files, shellcheck on staged scripts; the `commit-msg` hook checks the Conventional Commit subject and the scopes of `CLAUDE.md` (`scripts/check-commit-msg.sh`) | < 10 s |
    | L1 | `just check` | lefthook `pre-push` (clean tree required), `review-local --push` | `lint` (tsc on the four projects, ESLint, knip, Prettier, shellcheck, `lefthook validate`), `test` (Vitest with the coverage floor, doc coverage ≥ 90 %, the wiring tests `test-local-ci.sh` and `test-attest.sh`), `security` (Semgrep CE `p/javascript` + `p/typescript` on `src` and `tests`, shellcheck covers `scripts`; `pnpm audit --audit-level high`), `secrets` (gitleaks, full history) | < 3 min |
-   | L2 | `just gate` | `review-local` § 2b on the pushed head, before every merge | refuses a dirty tree, a HEAD behind the base or unpushed; `check`, then `sonar` (local SonarQube with quality-gate wait, coverage report fresher than the sources, server up), then `smoke` (`pnpm test:smoke`: production build and the browser smoke test in Chromium, Firefox and WebKit, ADR-0003); then the attestation of the head SHA captured before the first check | 5–15 min |
-   | L3 | `just nightly` | systemd user timer `retro-blocks-nightly` (04:50, persistent) | `check`, TruffleHog over the history (offline), `mise outdated` drift on the pinned tools | none |
+   | L2 | `just gate` | `review-local` § 2b on the pushed head, before every merge | refuses a dirty tree, a HEAD behind the base or unpushed; `check`, then `sonar` (local SonarQube with quality-gate wait, coverage report fresher than the sources, server up), then `smoke` (`pnpm test:smoke`: production build and the browser smoke test in Chromium, Firefox and WebKit, brick 5); then the attestation of the head SHA captured before the first check | 5–15 min |
+   | L3 | `just nightly` | systemd user timer `retro-blocks-nightly` (05:10, persistent; install: `scripts/systemd/README.md`) | `check`, TruffleHog over the history (offline), `mise outdated` drift on the pinned tools | none |
 
 2. **The gate is attested** (agents-skills ADR-0003): `just gate` ends with `scripts/attest.sh
    write gate <head>`, a signed git note on `refs/notes/gate` (`gate <owner/repo> <sha>`, SSH
    signature, namespace `local-ci`) pushed to the remote, then the commit status `gate` =
    success. The trust store is `.github/allowed_signers`, read from `origin/main`.
    **`just merge <pr>`** verifies both on the PR's exact head SHA and merges with
-   `gh pr merge --squash --match-head-commit`. `scripts/attest.sh` and `scripts/test-attest.sh`
-   are verbatim copies of the shared scripts of agents-skills (`~/.claude/scripts`), never
-   edited here, so every repository runs the same verifier.
+   `gh pr merge --squash --match-head-commit`. Squash is the merge strategy from now on (earlier
+   merges were merge commits): one `main` commit per PR, which `just gate` re-attests on `main`
+   before any deploy. `scripts/attest.sh`, `scripts/test-attest.sh` and `scripts/check-cassettes.sh`
+   are verbatim copies of the shared scripts of agents-skills (`~/.claude/scripts`), never edited
+   here, so every repository runs the same verifier; only `write gate` / `verify gate` are used
+   (the `deploy/*` and `release` modes belong to the first published release, and the cassette
+   filter has no caller here: it stays only because the verbatim `test-attest.sh` tests it).
 
 3. **No GitHub workflow.** `ci.yml`, `codeql.yml`, `dependency-review.yml`, `gitleaks.yml` and
    `scorecard.yml` are deleted; there is no `.github/workflows/` and the wiring test fails if a
@@ -86,15 +90,14 @@ principle stands and is taken to its end: nothing runs on GitHub. Issue #36.
   `gh pr merge --squash --match-head-commit <sha>` under the owner's explicit waiver, since
   `attest.sh verify` finds no `.github/allowed_signers` on `origin/main` yet. Every later merge
   goes through `just merge`.
-- The gate executes the branch's code on the owner's workstation, where the signing key, the `gh`
-  token and the SonarQube token live (the Actions sandbox did that before). `just gate` therefore
-  refuses a branch that changes a file defining what the gate runs — `justfile`, `lefthook.yml`,
-  `mise.toml`, `mise.lock`, `scripts/`, `.github/allowed_signers`, `package.json`,
-  `vitest.config.ts`, `eslint.config.mjs`, `knip.jsonc`, `playwright.config.ts`,
-  `sonar-project.properties`, `.gitleaks.toml`, `.gitleaksignore`, `.trufflehog-exclude`,
-  `tsconfig*.json`, `vite.config.ts`, `.prettierignore`, `.prettierrc.json` — until the owner has
-  read those files and sets `GATE_CI_CHANGE=1`, and `just merge` runs the verifier of
-  `origin/main`, never the checkout's.
+- The branch's code runs on the owner's workstation, where the signing key, the `gh` token and
+  the SonarQube token live (the Actions sandbox did that before), from the pre-push hook on. The
+  `GATE_CI_CHANGE` guard of `just gate` is therefore a review tripwire, not a sandbox: it refuses a
+  branch that changes a file defining what the gate runs or trusts (the pathspec list in the
+  `gate` recipe of `justfile`, the single source) until the owner has read those files and sets
+  `GATE_CI_CHANGE=1`; `just merge` runs the verifier of `origin/main`, never the checkout's.
+  `just gate` also runs `pnpm install --frozen-lockfile` first, so the tested `node_modules` are
+  the lockfile's.
 - The GitHub merge button checks the `gate` status only, which any write token could post; the
   signed note is the control, so merges go through `just merge` only.
 - Accepted supply-chain gap: Semgrep installs through mise's `pipx` backend, so `mise.lock` pins
@@ -102,14 +105,19 @@ principle stands and is taken to its end: nothing runs on GitHub. Issue #36.
   other tools are checksummed. Revisit when a release binary reaches the mise registry.
 - The Security tab loses the CodeQL and Scorecard reports; Dependabot alerts stay.
 - Contributors need mise (`curl https://mise.run | sh`), then `just setup`; `sonar-scanner` and
-  the Playwright browsers stay system tools.
-- The owner's main checkout must `git pull` and run `just setup` after the merge: its husky hook
-  path is gone with this change.
+  the Playwright browsers stay system tools. `mise.toml` sets `NODE_EXTRA_CA_CERTS` to the system
+  bundle for the owner's registry proxy; elsewhere the variable is harmless.
+- A clone that had husky keeps `core.hooksPath=.husky/_` and an ignored `.husky/_` folder after
+  the pull, so its hooks silently run nothing: `just setup` (`lefthook install --reset-hooks-path`)
+  unsets it; delete `.husky/` by hand.
+- Not adopted (skill rule 9): `engine-strict=true` in `.npmrc`; no native module, and `node-guard`
+  covers the recipes.
 
 ## References
 
 - Skill `local-ci` (tiers, attestation, templates); agents-skills ADR-0003 (attestation),
   ADR-0004 (prod from signed tags), #210, #259.
 - retro-shmup ADR-0029 (benoit-bremaud/retro-shmup#158), the model of this change.
-- ADR-0003 (browser smoke test), ADR-0004 (toolchain inherited from retro-shmup).
+- ADR-0004 (toolchain inherited from retro-shmup); the browser smoke test: brick 5
+  (`PROJECT_LOG.md`, 2026-10-19).
 - Issue #36 (MCDA record).

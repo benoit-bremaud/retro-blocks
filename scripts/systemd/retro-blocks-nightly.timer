@@ -2,7 +2,7 @@
 Description=Nightly local CI of retro-blocks (catches up after the PC was off)
 
 [Timer]
-OnCalendar=*-*-* 04:50:00
+OnCalendar=*-*-* 05:10:00
 Persistent=true
 RandomizedDelaySec=10min
 

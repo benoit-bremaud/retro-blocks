@@ -38,7 +38,7 @@
 | 2 | UI and visual — visual regression | later — when art is frozen | Playwright `toHaveScreenshot` | e2e | pre-merge | `testing-strategy` | — |
 | 3 | Performance — Core Web Vitals, frame budget | yes | Lighthouse, DevTools profiling | e2e | release | `qa-browser-check` `PERF-01` | RSK-04 |
 | 3 | Performance — load / stress / soak | no — static client, no server | — | — | — | — | — |
-| 4 | Security — SAST, secrets, SCA | yes | Semgrep CE, SonarQube, gitleaks, `pnpm audit` | static | per commit | `local-ci` | RSK-08 |
+| 4 | Security — SAST, secrets, SCA | yes | Semgrep CE, SonarQube, gitleaks, `pnpm audit` | static | per push (staged gitleaks per commit) | `local-ci` | RSK-08 |
 | 4 | Security — runtime probes | yes | browser | e2e | release | `qa-browser-check` `SEC-` | RSK-08 |
 | 5 | Data — boundary / nasty data on saves | yes | Vitest | unit | per commit | `testing-strategy` core rule 8 | RSK-02, 03 |
 | 6 | Compatibility — cross-browser | yes | Playwright projects | e2e | per commit | `testing-strategy` § Smoke | RSK-05 |

@@ -20,7 +20,7 @@ default: check
 setup:
     mise install
     mise x -- pnpm install --frozen-lockfile
-    mise x -- lefthook install
+    mise x -- lefthook install --reset-hooks-path
 
 # L0 — the pre-commit checks on the staged files (< 10 s)
 fast:
@@ -79,13 +79,17 @@ gate base="origin/main":
     [ -z "$(git status --porcelain)" ] || { echo "gate: commit or set aside local changes first" >&2; exit 1; }
     case "$base" in origin/*) git fetch --quiet origin "${base#origin/}" ;; esac
     git merge-base --is-ancestor "$base" HEAD || { echo "gate: HEAD is behind $base, merge or rebase it first" >&2; exit 1; }
-    # The gate runs the branch's own recipes and scripts with the owner's keys and tokens: a branch
-    # that changes them is gated only after a human read those files (GATE_CI_CHANGE=1).
-    ci=$(git diff --name-only "$base...HEAD" -- justfile lefthook.yml mise.toml mise.lock scripts .github/allowed_signers package.json vitest.config.ts eslint.config.mjs knip.jsonc playwright.config.ts sonar-project.properties .gitleaks.toml .gitleaksignore .trufflehog-exclude 'tsconfig*.json' vite.config.ts .prettierignore .prettierrc.json)
+    # Review tripwire, not a sandbox (the pre-push hook already ran this branch's code with the
+    # owner's keys and tokens): a branch that changes what the gate runs or trusts is gated only
+    # after the owner read those files (GATE_CI_CHANGE=1). One list, cited by ADR-0005.
+    ci=$(git diff --name-only --no-renames "$base...HEAD" -- justfile lefthook.yml lefthook-local.yml mise.toml mise.lock .mise.toml mise.local.toml .tool-versions .nvmrc scripts .github/allowed_signers package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc .pnpmfile.cjs vitest.config.ts eslint.config.mjs knip.jsonc playwright.config.ts sonar-project.properties .gitleaks.toml .gitleaksignore .semgrepignore 'tsconfig*.json' vite.config.ts .prettierignore .prettierrc.json)
     [ -z "$ci" ] || [ "${GATE_CI_CHANGE:-0}" = 1 ] || { echo "gate: this branch changes the local CI itself ($(printf '%s' "$ci" | tr '\n' ' ')): read those files, then run GATE_CI_CHANGE=1 just gate" >&2; exit 1; }
     [ -n "$(git branch -r --contains HEAD)" ] || { echo "gate: push HEAD first (the attestation is written on the pushed head)" >&2; exit 1; }
     # `check` runs from the body, not as a dependency, so the HEAD it checked is the one attested.
     head=$(git rev-parse HEAD)
+    # The tested node_modules must be the lockfile's: a dependency bump is otherwise tested
+    # against whatever was installed before, while pnpm audit reads the lockfile.
+    pnpm install --frozen-lockfile
     just check
     just sonar
     just smoke
@@ -109,15 +113,15 @@ sonar:
     curl -sf -m 5 "$url/api/system/status" | grep -q '"status":"UP"' || { echo "sonar: SonarQube is not UP at $url, start it first" >&2; exit 1; }
     SONAR_TOKEN="$SONAR_TOKEN" sonar-scanner -Dsonar.host.url="$url" -Dsonar.projectVersion="$(node -p "require('./package.json').version")" -Dsonar.qualitygate.wait=true
 
-# The browser smoke test (ADR-0003) against the production build, in Chromium, Firefox and WebKit:
+# The browser smoke test (brick 5, PROJECT_LOG 2026-10-19) against the production build, in Chromium, Firefox and WebKit:
 # `pnpm test:smoke` builds first. Step of gate, not of check.
 # Build the bundle and run the browser smoke test in the three engines (step of gate)
 smoke: node-guard
     pnpm test:smoke
 
 # Merge a PR only when its exact head SHA carries the gate attestation (agents-skills ADR-0003).
-# The verifier is read from origin/main. Squash, as every merge of this repository. Same-repository
-# PRs only (the head is fetched from origin).
+# The verifier is read from origin/main. Squash (ADR-0005 decision 2; earlier merges were merge
+# commits). Same-repository PRs only (the head is fetched from origin).
 merge pr:
     #!/bin/sh
     set -eu
@@ -131,10 +135,10 @@ merge pr:
     sh "$verifier" verify gate "$sha"
     gh pr merge "$pr" --squash --match-head-commit "$sha"
 
-# L3 — nightly, systemd user timer (no time budget): deep secret history (TruffleHog, offline;
-# .trufflehog-exclude lists itself, its wording trips the URI detector) and toolchain drift:
-# scripts/toolchain-drift.sh fails on a mise.toml tool behind its latest release.
+# L3 — nightly, systemd user timer (no time budget; install: scripts/systemd/README.md): deep
+# secret history (TruffleHog, offline) and toolchain drift: scripts/toolchain-drift.sh fails on a
+# mise.toml tool behind its latest release.
 # L3 — nightly (systemd timer): check + TruffleHog + toolchain drift
 nightly: check
-    trufflehog git "file://$PWD" --no-verification --fail --no-update --exclude-paths .trufflehog-exclude
+    trufflehog git "file://$PWD" --no-verification --fail --no-update
     sh scripts/toolchain-drift.sh

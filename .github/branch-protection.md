@@ -1,7 +1,7 @@
 # Branch protection — `main`
 
-`main` only moves through pull requests with green checks. This file documents
-the protection to apply and the exact commands; the configuration itself lives
+`main` only moves through pull requests whose head carries a verified `gate` attestation. This
+file documents the protection to apply and the exact commands; the configuration itself lives
 on GitHub, not in the repository.
 
 ## Policy
@@ -26,9 +26,9 @@ recipe itself is the trusted one.
 
 A new check is added to `checks` only after it has reported green once on a pull request;
 otherwise every pull request would wait for a check that never reports. For `gate` this means,
-on the bootstrap pull request (the one that introduces ADR-0005): run `just gate` on its pushed
-head first (the first `gate` report), then apply the protection above, replacing the deleted
-workflow jobs that would never report again, then merge with `gh pr merge` under the owner's
+on the bootstrap pull request (the one that introduces ADR-0005): run `GATE_CI_CHANGE=1 just gate`
+on its pushed head first (the first `gate` report; the branch changes the gate's own files), then
+apply the protection above, then merge with `gh pr merge` under the owner's
 explicit waiver (`.github/allowed_signers` is not on `main` yet, so `just merge` cannot verify the
 note). Every later merge goes through `just merge <pr>`.
 
@@ -37,29 +37,20 @@ note, verified against the trust store of `origin/main`, is the real control, an
 checks it. The owner therefore merges through `just merge` only, never the GitHub button; no
 collaborator holds write access and personal tokens keep the minimal scopes.
 
-### Required reviews: 0 now, 1 once a reviewer bot exists
+### Required reviews: 0
 
-The cross-project convention is 1 required review. On this repository there is
-one human and, for now, no reviewer bot: with `required_approving_review_count`
-at 1 every PR would be unmergeable without an admin bypass, and a gate that is
-bypassed on every merge is worse than none.
-
-- **Recommended default (now): `0`.** A PR is still mandatory, the `gate`
-  status must be green on the head, and the local pre-push review gate runs before every push.
-- **Switch to `1`** as soon as a reviewer bot (Copilot or Codex) is configured
-  and counts as an approval. Only the count changes; re-run the apply command.
+No GitHub-hosted review runs on this repository (owner rule 2026-11-07: the review is the local
+`review-local` gate with the `adversarial-reviewer` agent). With one human and no reviewer counted
+by GitHub, `required_approving_review_count: 1` would make every PR unmergeable without an admin
+bypass, and a gate bypassed on every merge is worse than none. A PR stays mandatory and the `gate`
+status must be green on the head.
 
 ### When to apply
 
-Per the GitHub documentation, protected branches are available on a private
-repository only with GitHub Pro or higher; on GitHub Free they are available
-in public repositories. The owner's account is on GitHub Free, so the `PUT`
-below is refused while the repository is private. Apply it immediately after
-the switch to public (same day per the project log), then verify.
+The repository is public, so GitHub Free allows the protection: apply it at bootstrap step 2
+(ADR-0005 § Consequences), then verify.
 
 ## Apply (one-time, by owner)
-
-Recommended default (0 required approvals):
 
 ```bash
 gh api repos/benoit-bremaud/retro-blocks/branches/main/protection \
@@ -84,30 +75,6 @@ gh api repos/benoit-bremaud/retro-blocks/branches/main/protection \
 EOF
 ```
 
-With a reviewer bot (1 required approval) — same body, one value changed:
-
-```bash
-gh api repos/benoit-bremaud/retro-blocks/branches/main/protection \
-  --method PUT \
-  --input - <<'EOF'
-{
-  "required_status_checks": {
-    "strict": true,
-    "checks": [
-      { "context": "gate" }
-    ]
-  },
-  "enforce_admins": true,
-  "required_pull_request_reviews": {
-    "required_approving_review_count": 1,
-    "dismiss_stale_reviews": true
-  },
-  "restrictions": null,
-  "allow_force_pushes": false,
-  "allow_deletions": false
-}
-EOF
-```
 
 Notes on the request body (REST API, `2022-11-28`):
 
@@ -145,8 +112,6 @@ Expected:
   "deletion": false
 }
 ```
-
-(`"reviews": 1` once the bot-reviewer variant is applied.)
 
 ## Remove (emergency only)
 

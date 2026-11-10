@@ -2,8 +2,8 @@
   Title format (Conventional Commits):
     <type>(<scope>): <short description>
 
-  Types:  feat, fix, refactor, docs, test, chore, perf, style, build, ci
-  Scopes: design, adr, uml, docs, ci, repo,
+  Types:  feat, fix, docs, chore, refactor, test, ci, build, perf
+  Scopes: design, adr, uml, docs, ci, repo, deps,
           engine, game, render, audio, input, ui, assets, i18n, tests
 
   Examples:
