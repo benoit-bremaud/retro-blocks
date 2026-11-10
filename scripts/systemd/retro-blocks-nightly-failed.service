@@ -1,0 +1,6 @@
+[Unit]
+Description=Desktop notification when the retro-blocks nightly local CI fails
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/notify-send --urgency=critical "retro-blocks local CI nightly failed" "journalctl --user -u retro-blocks-nightly.service"

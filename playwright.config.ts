@@ -2,8 +2,8 @@ import { defineConfig, devices } from '@playwright/test';
 
 const PORT = 4173;
 
-// The browser smoke test (ADR-0003), against the built bundle, in the three engines
-//. Not in CI or in verify: run it with `make smoke` when render, input,
+// The browser smoke test (ADR-0003), against the built bundle, in the three engines. A step of
+// `just gate`, not of `just check` (ADR-0005); run `just smoke` alone when render, input,
 // bootstrap or save code changes. `pnpm test:smoke` builds first; the server below is `vite
 // preview` itself, not a shell chain, so Playwright stops it and nothing stays on the port.
 export default defineConfig({

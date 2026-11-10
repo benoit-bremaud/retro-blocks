@@ -55,3 +55,10 @@
 - PR #26 (`7bc783e`, closes #25): the new-code gate was red on `main` with 3 test-code violations (S5906 `toHaveLength` in `frame-loop.test.ts`, S5976 three scoring tests merged into one `it.each`); gate PASSED again.
 - PR #27 (`066b189`, closes #21): `docs/architecture/qa/test-plan.md`, first plan produced by `/test-plan` (pilot of claude-skills#75) — 8 risks, 12 families (9 apply), journeys JRN-01..03; gaps filed as #22 (E2E line clear, hall of fame, settings), #23 (axe-core), #24 (perf budget).
 - Codex finding on #27: the smoke never completes a row, so JRN-01's line clear moved into gap #22.
+
+## 2026-11-10 — Local CI in four tiers, no GitHub workflow (issue #36, ADR-0005)
+- Owner rule 2026-11-07 (agents-skills#259): every check runs locally; Actions now bill the account. MCDA validated by the owner: zero workflow 485/500 (vs `ci.yml` kept 290, Scorecard kept 270).
+- Deleted `ci.yml`, `codeql.yml`, `dependency-review.yml`, `gitleaks.yml`, `scorecard.yml`, the `Makefile`, husky, lint-staged, commitlint; Dependabot keeps `npm` only.
+- Added `justfile` (`fast` / `check` / `gate` / `nightly`, `sonar`, `smoke`, `merge`), `lefthook.yml`, `mise.toml` + `mise.lock`, `scripts/` (attest, wiring tests, doc coverage, commit-msg check, toolchain drift, systemd nightly units), `.github/allowed_signers`, `.github/branch-protection.md`. Mapping: CI job → `just check`; Gitleaks → gitleaks CLI (L0, L1, L3); CodeQL → Semgrep CE; Dependency review → `pnpm audit --audit-level high`; Scorecard → dropped.
+- `scripts/attest.sh` and `scripts/test-attest.sh` are verbatim copies of `~/.claude/scripts` (lesson of retro-shmup#158: the sibling's copy had drifted on both sides, #376 and #380 were missing there).
+- Branch protection applied on `main`: `gate` status only (strict), PR required, admins included.

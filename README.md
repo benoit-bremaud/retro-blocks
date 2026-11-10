@@ -6,10 +6,17 @@ Browser falling-block puzzle game (codename). TypeScript strict + native Canvas 
 
 ## Develop
 
-Node 22, pnpm 10. `pnpm install`, then `pnpm dev`.
+Node 22, pnpm 10. Install [mise](https://mise.jdx.dev) (`curl https://mise.run | sh`), then
+`just setup` (pinned toolchain, dependencies, git hooks), then `pnpm dev`.
 
-The pre-push hook runs `make verify`, which needs `gitleaks`, `sonar-scanner` and a SonarQube
-server at `http://localhost:9000` (token in `$SONAR_TOKEN` or `~/.config/sonarqube/analysis-token`).
+**Quality gate, local only** (ADR-0005, skill `local-ci`): four `just` tiers, no GitHub workflow —
+`fast` on commit (staged files), `check` on push (typecheck, lint, knip, format, tests with
+coverage, doc coverage, Semgrep, `pnpm audit`, gitleaks), `gate` before every merge (`check`, the
+local SonarQube quality gate, the browser smoke test in three engines, then a signed attestation
+of the head SHA that `just merge <pr>` requires), `nightly` on a systemd timer. `just gate` needs
+`sonar-scanner`, a SonarQube server at `http://localhost:9000` (token in `$SONAR_TOKEN` or
+`~/.config/sonarqube/analysis-token`) and the Playwright browsers
+(`pnpm exec playwright install chromium firefox webkit`).
 
 > The genre's best-known title is a registered trademark. This repo uses a codename, original
 > assets and no trademarked name or artwork.

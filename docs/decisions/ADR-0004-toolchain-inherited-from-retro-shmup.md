@@ -1,6 +1,8 @@
 # ADR-0004: Toolchain and quality gate inherited from retro-shmup
 
-**Status:** Accepted — 2026-10-16
+**Status:** Accepted — 2026-10-16. **Partially superseded by ADR-0005** (2026-11-10): the
+"Local-first gate" row below is replaced by the four local `just` tiers and the attested gate; no
+GitHub workflow runs any more.
 
 ## Context
 ADR-0002 copies retro-shmup's generic code. Its toolchain decisions are just as reusable, but
