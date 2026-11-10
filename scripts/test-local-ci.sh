@@ -4,7 +4,8 @@
 # the Node major and pnpm pins agree, lefthook.yml is valid and wires the commit-msg and pre-push hooks,
 # the commit-msg check accepts and refuses the right subjects; then, in a throwaway repository with
 # stubbed boundaries (just steps, attest.sh, gh, sonar-scanner): gate refuses a dirty tree, a HEAD
-# behind the base or unpushed, runs check → sonar → smoke → attestation in that order, stops at the
+# behind the base or unpushed, a change to any guarded CI file without GATE_CI_CHANGE=1, a failed
+# pnpm install; runs install → check → sonar → smoke → attestation in that order, stops at the
 # first failing step and attests nothing when a step fails or HEAD moved, and propagates a failed
 # attestation, passing it the head SHA captured before the checks (agents-skills ADR-0003); merge refuses a non-numeric PR and a head without attestation,
 # merges with --squash --match-head-commit and propagates a gh failure; sonar refuses a missing or
