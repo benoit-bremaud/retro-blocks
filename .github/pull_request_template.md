@@ -2,9 +2,9 @@
   Title format (Conventional Commits):
     <type>(<scope>): <short description>
 
-  Types:  feat, fix, refactor, docs, test, chore, perf, style, build, ci
-  Scopes: design, adr, uml, docs, ci, repo,
-          engine, game, render, audio, input, ui, levels, assets, i18n, tests
+  Types:  feat, fix, docs, chore, refactor, test, ci, build, perf
+  Scopes: design, adr, uml, docs, ci, repo, deps,
+          engine, game, render, audio, input, ui, assets, i18n, tests
 
   Examples:
     docs(design): tune the chain multiplier thresholds
@@ -34,8 +34,8 @@
 - [ ] No `any`, no default exports
 - [ ] No browser API (`canvas`, `window`, `AudioContext`, `Date.now()`, `Math.random()`) in the domain — ports and adapters only
 - [ ] No allocation inside the game loop (object pools)
-- [ ] Security checklist of the owner's security policy applied to the diff: no HTML injection sink or `eval` (INJ-3/4), untrusted input — save document, URL, storage — validated by allowlist (INPUT-1/2), no secret in code or logs (SECRET-1..3), fails closed with no swallowed error (ERR-1/2), security headers for any deployed page (CONFIG-2), actions pinned by SHA and lockfile committed (SUPPLY-1)
-- [ ] `make verify` passed locally (includes gitleaks, dependency audit and the SonarQube quality gate)
+- [ ] Security checklist of the owner's security policy applied to the diff: no HTML injection sink or `eval` (INJ-3/4), untrusted input — save document, URL, storage — validated by allowlist (INPUT-1/2), no secret in code or logs (SECRET-1..3), fails closed with no swallowed error (ERR-1/2), security headers for any deployed page (CONFIG-2), lockfile committed (SUPPLY-1)
+- [ ] `just check` passed locally (lint, tests with coverage, Semgrep, `pnpm audit`, gitleaks); `just gate` attests the pushed head before the merge (ADR-0005)
 - [ ] Every new player-facing string goes through the message catalogue (EN + FR)
 - [ ] `CREDITS.md` updated for any asset added or replaced
 - [ ] `PROJECT_LOG.md` will be updated after merge

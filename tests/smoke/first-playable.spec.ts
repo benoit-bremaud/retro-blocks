@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
 
-// The browser smoke test (ADR-0003) against the built bundle, in Chromium, Firefox and WebKit: the
+// The browser smoke test (brick 5, PROJECT_LOG 2026-10-19) against the built bundle, in Chromium, Firefox and WebKit: the
 // game boots without errors, a hard drop locks a piece on the floor, pause dims the field and
 // resumes, and a stack to the ceiling ends the run until Enter starts a new one. It reads canvas
 // pixels only: no test hook in the game.

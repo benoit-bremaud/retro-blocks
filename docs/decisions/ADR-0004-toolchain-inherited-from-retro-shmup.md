@@ -1,6 +1,8 @@
 # ADR-0004: Toolchain and quality gate inherited from retro-shmup
 
-**Status:** Accepted — 2026-10-16
+**Status:** Accepted — 2026-10-16. **Partially superseded by ADR-0005** (2026-11-10): the
+"Local-first gate" row below is replaced by the four local `just` tiers and the attested gate; no
+GitHub workflow runs any more.
 
 ## Context
 ADR-0002 copies retro-shmup's generic code. Its toolchain decisions are just as reusable, but
@@ -15,7 +17,7 @@ Adopt these retro-shmup decisions (source SHA `f698786`), restated here:
 | Determinism | No `Date` / `Math.random` in the domain: fixed steps and an injected seeded PRNG. | ADR-0002, ADR-0009 |
 | No allocation in the loop | Index loops in `src/`; `for...of` is banned (it allocates an iterator below V8's optimizing tier, measured 2026-10-08). | CLAUDE.md |
 | Toolchain | TypeScript 6.0 strict (typescript-eslint supports < 6.1), Node 22, pnpm, Vite, Vitest, ESLint strict type-checked, Prettier, knip; tool configs typed with Node types only. | ADR-0011 |
-| Local-first gate | `make verify` in the pre-push hook: typecheck, lint, knip, format, tests with coverage, doc coverage, gitleaks, `pnpm audit`, local SonarQube with quality-gate wait. CI keeps a light check plus the security workflows (Gitleaks, CodeQL, Dependency Review, OSSF Scorecard non-blocking). | ADR-0007, ADR-0013 |
+| Local-first gate | **(superseded by ADR-0005)** `make verify` in the pre-push hook: typecheck, lint, knip, format, tests with coverage, doc coverage, gitleaks, `pnpm audit`, local SonarQube with quality-gate wait. CI keeps a light check plus the security workflows (Gitleaks, CodeQL, Dependency Review, OSSF Scorecard non-blocking). | ADR-0007, ADR-0013 |
 
 ## Consequences
 Rules are stated here once and cited by the config files. A change to one of them needs a new ADR

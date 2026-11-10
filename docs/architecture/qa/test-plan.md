@@ -12,7 +12,7 @@
 | Criticality | showcase — no account, no payment; only data is the hall of fame and settings in `localStorage` |
 | Stack and runners | TypeScript strict, Canvas 2D, Vite; Vitest (unit, 90 % thresholds), Playwright smoke on Chromium / Firefox / WebKit |
 | Environments | local only (no deployment yet) |
-| CI today | `ci.yml` (lint, typecheck, test), CodeQL, dependency review, gitleaks, Scorecard; pre-push `make verify` (gitleaks + SonarQube) |
+| CI today | local only (ADR-0005): `just fast` on commit, `just check` on push (lint, typecheck, tests, Semgrep, `pnpm audit`, gitleaks), `just gate` before merge (SonarQube, browser smoke, attestation), `just nightly`; no GitHub workflow |
 
 ## Risk register
 
@@ -38,12 +38,12 @@
 | 2 | UI and visual — visual regression | later — when art is frozen | Playwright `toHaveScreenshot` | e2e | pre-merge | `testing-strategy` | — |
 | 3 | Performance — Core Web Vitals, frame budget | yes | Lighthouse, DevTools profiling | e2e | release | `qa-browser-check` `PERF-01` | RSK-04 |
 | 3 | Performance — load / stress / soak | no — static client, no server | — | — | — | — | — |
-| 4 | Security — SAST, secrets, SCA | yes | CodeQL, SonarQube, gitleaks, dependency review | static | per commit | `security-ci-baseline` | RSK-08 |
+| 4 | Security — SAST, secrets, SCA | yes | Semgrep CE, SonarQube, gitleaks, `pnpm audit` | static | per push (staged gitleaks per commit) | `local-ci` | RSK-08 |
 | 4 | Security — runtime probes | yes | browser | e2e | release | `qa-browser-check` `SEC-` | RSK-08 |
 | 5 | Data — boundary / nasty data on saves | yes | Vitest | unit | per commit | `testing-strategy` core rule 8 | RSK-02, 03 |
 | 6 | Compatibility — cross-browser | yes | Playwright projects | e2e | per commit | `testing-strategy` § Smoke | RSK-05 |
 | 6 | Compatibility — i18n EN / FR | yes | Vitest (`messages`), browser | unit / e2e | per commit | `i18n` | RSK-03 |
-| 7 | Infrastructure — build / pipeline | yes | CI, `make verify` | build | per commit | `security-ci-baseline` | — |
+| 7 | Infrastructure — build / pipeline | yes | `just check`, `just gate` | build | per commit | `local-ci` | — |
 | 7 | Infrastructure — rollback, canary | later — when deployed | — | — | — | `release-tag` | — |
 | 8 | Reliability — error handling, focus loss | yes | Vitest | unit | per commit | checklist `ROB-` | RSK-07 |
 | 9 | Content and SEO | no — game page, not a content site | — | — | — | — | — |
