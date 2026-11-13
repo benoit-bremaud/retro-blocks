@@ -19,7 +19,7 @@ trufflehog = "3.99.8"
 jq = "1.8.2" # scripts/test-attest.sh applies the `gh api -q` filter through it
 # Semgrep Community Edition (SAST, replaces CodeQL). pipx backend: the version is pinned, its Python
 # dependencies are resolved at install time (accepted gap, ADR-0005 consequences).
-"pipx:semgrep" = "1.184.0"
+"pipx:semgrep" = "1.185.0"
 
 [env]
 # The standalone pnpm binary ships its own CA bundle and refuses the certificate the Aikido
