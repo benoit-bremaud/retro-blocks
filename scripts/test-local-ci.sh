@@ -1,6 +1,6 @@
 #!/bin/sh
 # Tests for the local CI wiring (#36, skill local-ci rule 7): the four tiers exist and compose
-# (check = lint + test + security + secrets; nightly ⊇ check), no GitHub workflow is left (ADR-0005),
+# (check = lint + test + security + secrets; nightly warns on check, fails on vulnerabilities and secrets), no GitHub workflow is left (ADR-0005),
 # the Node major and pnpm pins agree, lefthook.yml is valid and wires the commit-msg and pre-push hooks,
 # the commit-msg check accepts and refuses the right subjects; then, in a throwaway repository with
 # stubbed boundaries (just steps, attest.sh, gh, sonar-scanner): gate refuses a dirty tree, a HEAD
@@ -45,9 +45,12 @@ for r in fast check gate nightly setup merge smoke sonar; do
 done
 deps() { just --show "$1" | grep -E "^$1( |:)" | sed 's/.*: *//'; } # deps <recipe>
 [ "$(deps check)" = "lint test security secrets" ] || fail "check must be exactly lint test security secrets"; ok
-deps nightly | grep -qw check || fail "nightly does not depend on check"; ok
+just --show nightly | grep -q 'warn just check' || fail "nightly does not run check as a warning"; ok
+for c in 'pnpm audit --audit-level high || rc=1' 'gitleaks git --redact --no-banner . || rc=1' 'trufflehog git .* || rc=1' 'exit "\$rc"'; do
+  just --show nightly | grep -q -- "$c" || fail "nightly: missing $c"
+done; ok
 for s in doc-coverage test-local-ci test-attest; do just --show test | grep -q "scripts/$s.sh" || fail "test does not run scripts/$s.sh"; done; ok
-just --show nightly | grep -q 'scripts/toolchain-drift.sh' || fail "nightly does not check the toolchain drift"; ok
+just --show nightly | grep -q 'warn sh scripts/toolchain-drift.sh' || fail "nightly does not warn on the toolchain drift"; ok
 [ -z "$(find .github -path '*/workflows/*' -name '*.y*ml' 2>/dev/null)" ] || fail "a GitHub workflow is left (ADR-0005: none)"; ok
 # The Node major and the pnpm version are each written in two places; they must agree.
 v=$(cat .nvmrc)
