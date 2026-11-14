@@ -7,7 +7,8 @@
 #   L1 check    pre-push hook, review-local --push     lint + test + security + secrets        < 3 min
 #   L2 gate     review-local § 2b, on the pushed head  check + Sonar + browser smoke,          5–15 min
 #               before every merge                     then the attestation
-#   L3 nightly  systemd user timer                     check + TruffleHog + toolchain drift
+#   L3 nightly  systemd user timer, clean origin/main   audit + gitleaks + TruffleHog fail,
+#               worktree                               check + toolchain drift warn
 #
 # Then: `just merge <pr>` (refuses without the gate attestation on the head SHA).
 
@@ -135,10 +136,18 @@ merge pr:
     sh "$verifier" verify gate "$sha"
     gh pr merge "$pr" --squash --match-head-commit "$sha"
 
-# L3 — nightly, systemd user timer (no time budget; install: scripts/systemd/README.md): deep
-# secret history (TruffleHog, offline) and toolchain drift: scripts/toolchain-drift.sh fails on a
-# mise.toml tool behind its latest release.
-# L3 — nightly (systemd timer): check + TruffleHog + toolchain drift
-nightly: check
-    trufflehog git "file://$PWD" --no-verification --fail --no-update
-    sh scripts/toolchain-drift.sh
+# L3 — nightly, systemd user timer, on a clean origin/main worktree (install: scripts/systemd/README.md,
+# agents-skills#427). Only known vulnerabilities (pnpm audit) and secrets (gitleaks, TruffleHog,
+# offline) fail it; `just check` and the toolchain drift print a warning (drift, not a failure).
+# L3 — nightly (clean origin/main worktree): audit + gitleaks + TruffleHog fail, check + drift warn
+nightly:
+    #!/bin/sh
+    set -u
+    rc=0
+    warn() { "$@" || echo "WARNING nightly: $* failed (drift, not a failure)" >&2; }
+    warn just check
+    warn sh scripts/toolchain-drift.sh
+    pnpm audit --audit-level high || rc=1
+    gitleaks git --redact --no-banner . || rc=1
+    trufflehog git "file://$PWD" --no-verification --fail --no-update || rc=1
+    exit "$rc"
