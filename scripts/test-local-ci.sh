@@ -1,6 +1,6 @@
 #!/bin/sh
 # Tests for the local CI wiring (#36, skill local-ci rule 7): the four tiers exist and compose
-# (check = lint + test + security + secrets; nightly warns on check, fails on vulnerabilities and secrets), no GitHub workflow is left (ADR-0005),
+# (check = lint + test + security + secrets; nightly: see its box tests), no GitHub workflow is left (ADR-0005),
 # the Node major and pnpm pins agree, lefthook.yml is valid and wires the commit-msg and pre-push hooks,
 # the commit-msg check accepts and refuses the right subjects; then, in a throwaway repository with
 # stubbed boundaries (just steps, attest.sh, gh, sonar-scanner): gate refuses a dirty tree, a HEAD
@@ -20,7 +20,7 @@ set -e
 unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_PREFIX GIT_OBJECT_DIRECTORY GIT_COMMON_DIR
 # The gate of a branch that changes the local CI runs with GATE_CI_CHANGE=1; the guard cases
 # below must not inherit it, nor the stub switches and Sonar settings of the caller's shell.
-unset GATE_CI_CHANGE SONAR_TOKEN SONAR_HOST_URL FAIL_STEP ATTEST_FAIL GH_FAIL MOVE_HEAD SCANNER_FAIL SONAR_DOWN MISE_OUT MISE_PATCH PR_HEAD PNPM_FAIL
+unset GATE_CI_CHANGE SONAR_TOKEN SONAR_HOST_URL FAIL_STEP ATTEST_FAIL GH_FAIL MOVE_HEAD SCANNER_FAIL SONAR_DOWN MISE_OUT MISE_PATCH PR_HEAD PNPM_FAIL DRIFT_FAIL GITLEAKS_FAIL TRUFFLEHOG_FAIL
 # The throwaway repositories must not inherit the machine's signing, hooks or URL rewrites.
 export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_SYSTEM=/dev/null
 
@@ -122,6 +122,9 @@ cat > "$box/stub/mise" <<'EOF2'
 #!/bin/sh
 case "$*" in *--bump*) printf '%s\n' "$MISE_OUT" ;; *) printf '%s\n' "${MISE_PATCH:-}" ;; esac
 EOF2
+for t in gitleaks trufflehog; do
+  printf '#!/bin/sh\necho "%s $*" >> "$LOG"; [ "${%s_FAIL:-0}" = 0 ]\n' "$t" "$(echo "$t" | tr a-z A-Z)" > "$box/stub/$t"
+done
 cat > "$box/stub/curl" <<'EOF2'
 #!/bin/sh
 echo "curl $*" >> "$LOG"; [ "${SONAR_DOWN:-0}" = 0 ] && echo '{"status":"UP"}'
@@ -137,6 +140,19 @@ box_run() { # box_run <expected-exit> <label> <text the output or log must hold|
   ok
 }
 no_line() { ! grep -q "$1" "$LOG" || { cat "$LOG"; fail "$2"; }; ok; }
+
+# nightly (agents-skills#427): check and drift only warn; audit, gitleaks and TruffleHog fail it,
+# and every step runs after an earlier failure. A throwaway drift stub, removed before the gate tests.
+printf '#!/bin/sh\necho drift >> "$LOG"; [ "${DRIFT_FAIL:-0}" = 0 ]\n' > scripts/toolchain-drift.sh
+box_run 0 "nightly: green path" - -- "$real_just" nightly
+[ "$(tr '\n' ' ' < "$LOG")" = "just check drift pnpm audit --audit-level high gitleaks git --redact --no-banner . trufflehog git file://$PWD --no-verification --fail --no-update " ] || { cat "$LOG"; fail "nightly steps or order: $(cat "$LOG")"; }; ok
+box_run 0 "nightly: failing check only warns" "WARNING nightly: just check failed" -- env FAIL_STEP=check "$real_just" nightly
+box_run 0 "nightly: drift only warns" "WARNING nightly: sh scripts/toolchain-drift.sh failed" -- env DRIFT_FAIL=1 "$real_just" nightly
+for f in PNPM GITLEAKS TRUFFLEHOG; do
+  box_run 1 "nightly: $f finding fails it" - -- env "${f}_FAIL=1" FAIL_STEP=check "$real_just" nightly
+  grep -q '^trufflehog' "$LOG" || fail "nightly: $f failure skipped the later steps"; ok
+done
+rm scripts/toolchain-drift.sh
 
 # gate: refusals first, then the order of the steps, then the two late refusals.
 echo dirty > src/d && box_run 1 "gate: dirty tree refused" "commit or set aside" -- "$real_just" gate main

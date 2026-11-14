@@ -7,7 +7,8 @@
 #   L1 check    pre-push hook, review-local --push     lint + test + security + secrets        < 3 min
 #   L2 gate     review-local § 2b, on the pushed head  check + Sonar + browser smoke,          5–15 min
 #               before every merge                     then the attestation
-#   L3 nightly  systemd user timer                     check + TruffleHog + toolchain drift
+#   L3 nightly  systemd user timer, clean origin/main   audit + gitleaks + TruffleHog fail,
+#               worktree                               check + toolchain drift warn
 #
 # Then: `just merge <pr>` (refuses without the gate attestation on the head SHA).
 
@@ -138,6 +139,7 @@ merge pr:
 # L3 — nightly, systemd user timer, on a clean origin/main worktree (install: scripts/systemd/README.md,
 # agents-skills#427). Only known vulnerabilities (pnpm audit) and secrets (gitleaks, TruffleHog,
 # offline) fail it; `just check` and the toolchain drift print a warning (drift, not a failure).
+# L3 — nightly (clean origin/main worktree): audit + gitleaks + TruffleHog fail, check + drift warn
 nightly:
     #!/bin/sh
     set -u

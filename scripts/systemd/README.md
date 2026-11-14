@@ -8,10 +8,12 @@ notification. Install once, and again after every change to these units, from th
 on an up-to-date `main`:
 
 ```bash
-cp scripts/systemd/retro-blocks-nightly.service scripts/systemd/retro-blocks-nightly-failed.service scripts/systemd/retro-blocks-nightly.timer ~/.config/systemd/user/ && systemctl --user daemon-reload && systemctl --user enable --now retro-blocks-nightly.timer
+cp --remove-destination scripts/systemd/retro-blocks-nightly.service scripts/systemd/retro-blocks-nightly-failed.service scripts/systemd/retro-blocks-nightly.timer ~/.config/systemd/user/ && systemctl --user daemon-reload && systemctl --user reenable --now retro-blocks-nightly.timer
 ```
 
 The units are copies, not symlinks: the live units do not depend on the branch checked out here.
+`--remove-destination` replaces an older symlinked install instead of writing through it, and
+`reenable` rebuilds the timer's `timers.target.wants` link.
 
 Check: `systemctl --user list-timers retro-blocks-nightly.timer`; logs:
 `journalctl --user -u retro-blocks-nightly.service`.

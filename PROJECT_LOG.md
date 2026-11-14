@@ -64,5 +64,5 @@
 - Branch protection on `main` applied 2026-11-10 after the first `GATE_CI_CHANGE=1 just gate` on the pushed head a7795ec (ADR-0005): required status `gate` only, strict, 0 required reviews, admins included, no force push, no deletion (verified through the branch protection API). Gate on a7795ec: 268 Vitest, 110 + 31 wiring cases, docs 95.7 %, SonarQube PASSED, smoke on 3 engines; L0 3 s, L1 45 s.
 
 ## 2026-11-15 — #42 nightly on a clean origin/main worktree
-- Applies agents-skills#427: the nightly unit runs in `~/.cache/nightly/retro-blocks` (worktree of `origin/main`, fetched, reset, cleaned, `pnpm install --frozen-lockfile` each run), never the working checkout. Units installed as copies, no longer symlinks into the main checkout.
-- `just nightly` fails only on `pnpm audit` HIGH+ (the 2026-11-12/13 failures), gitleaks or TruffleHog; `just check` and `toolchain-drift.sh` print `WARNING nightly: … (drift, not a failure)`.
+- Applies agents-skills#427: the nightly unit runs in `~/.cache/nightly/retro-blocks` (worktree of `origin/main`, fetched, reset, cleaned, `pnpm install --frozen-lockfile` each run), never the working checkout. Units installed as copies (`cp --remove-destination` + `reenable`), no longer symlinks into the main checkout.
+- `just nightly` fails only on `pnpm audit` HIGH+, gitleaks or TruffleHog (the 2026-11-12/13/14 failures were toolchain drift; they now warn); `just check` and `toolchain-drift.sh` print `WARNING nightly: … (drift, not a failure)`.
